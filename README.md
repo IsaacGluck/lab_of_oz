@@ -1,6 +1,5 @@
 # Evolutionary Computational Genomics Lab
-## Isaac Gluck, '19, Junior Research Scholar
-### Dartmouth College
+## Isaac Gluck '19, Junior Research Scholar for Professor Zhaxybayeva
 
 Python Scripts; working towards a *Novel Algorithm to Detect Exchange of Genetic Material Among Microorganisms*.
 

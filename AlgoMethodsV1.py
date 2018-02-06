@@ -178,7 +178,9 @@ def putQuartetsDictionary(tree, to_prune, dictonary_of_quartets):
 def getAllQuartetsAsDictionary(trees):
 	start_start_time = timeit.default_timer()
 
+	print "getAllQuartetsAsDictionary started"
 	dictonary_of_quartets = {}
+	print "File read, dictionary initialized, beginning to loop..."
 
 	for bootstrap_sample in trees:
 		combinations_of_leaves = combinationsOfLeaves(bootstrap_sample) # returns list of tuples
@@ -189,9 +191,22 @@ def getAllQuartetsAsDictionary(trees):
 
 
 # TEST getAllQuartetsAsDictionary
-trees = readTreeFile("for_isaac/RAxML_bootstrap.orfg1")
+trees = readTreeFile("../for_isaac2/for_issac/RAxML_bootstrap.orfg1")
+
+# print len(trees[0].get_leaf_names())
+
 dictonary_of_quartets = getAllQuartetsAsDictionary(trees)
-# pprint(dictonary_of_quartets)
+
+dlen = len(dictonary_of_quartets)
+total_quartets_analyzed = 0
+
+for key, value in dictonary_of_quartets.iteritems():
+	total_quartets_analyzed += (value[1] + value[3] + value[5])
+
+
+# print total
+
+pprint(dictonary_of_quartets)
 counter = 0
 for key in dictonary_of_quartets:
 	print "{0} - {1}: {2}".format(counter, key, dictonary_of_quartets[key])

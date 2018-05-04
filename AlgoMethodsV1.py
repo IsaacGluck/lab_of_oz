@@ -4,6 +4,7 @@ from ete3 import Tree, TreeStyle
 from math import log
 from pprint import pprint
 import timeit
+import dendropy
 
 # Returns a list of the bootstrap sample trees
 # File MUST have a new line at the end
@@ -50,13 +51,13 @@ def putQuartetsDictionary(tree, dictonary_of_quartets):
 		t = tree.copy(); # Copy the tree so as not to destroy the parameter
 		t.prune(tuple_of_leaf_names) # Prune the tree based on the names of the leaves
 
-	
+
 		# Check 1st Topology
 		result0 = t.compare(dictonary_of_quartets[tuple_of_leaf_names][0], unrooted=True)
 		if (result0["rf"] == 0): # same topology
 			dictonary_of_quartets[tuple_of_leaf_names][1] = dictonary_of_quartets[tuple_of_leaf_names][1] + 1
 			continue
-			
+
 		# Check 2nd Topology
 		result1 = t.compare(dictonary_of_quartets[tuple_of_leaf_names][2], unrooted=True) # Check against 2nd topology
 		if (result1["rf"] == 0): # same topology
@@ -78,8 +79,8 @@ def putQuartetsDictionary(tree, dictonary_of_quartets):
 	return dictonary_of_quartets
 
 
-# Returns a dictionary for each quartet. The key is 
-# a tuple of taxa names, value contains the 3 topologies 
+# Returns a dictionary of each quartet. The key is
+# a tuple of taxa names, value contains the 3 topologies
 # and their counts from the bootstrap sample trees
 def getAllQuartetsAsDictionary(trees):
 
@@ -95,7 +96,7 @@ def getAllQuartetsAsDictionary(trees):
 
 # Takes in a list of dictionaries from M gene trees, merges them and normalizes values
 # Also calculates the Internode Certainty Value (based on Shannon's Entropy)
-# Returned dictonary with tuples of quartets as the keys and lists as the values - 
+# Returned dictonary with tuples of quartets as the keys and lists as the values -
 # The lists are structured as follows [t1, P(t1), t2, P(t2), t3, P(t3), IQ]
 def mergeQuartetDictionaries(list_of_dictionaries, bootstrap_cutoff):
 	print "Merging {0} dictionaries...".format(len(list_of_dictionaries))
@@ -104,7 +105,7 @@ def mergeQuartetDictionaries(list_of_dictionaries, bootstrap_cutoff):
 
 	while len(list_of_dictionaries) != 0:
 		current_dict = list_of_dictionaries.pop(0)
-		
+
 		if (len(current_dict) == 0): # make sure dictionary is not empty
 			continue
 
@@ -112,7 +113,7 @@ def mergeQuartetDictionaries(list_of_dictionaries, bootstrap_cutoff):
 			value = current_dict[key]
 			if key not in final_dictionary: # Must create the list
 				new_value = [None, 0.0, None, 0.0, None, 0.0, 1.0] # use floats to ensure no flooring during division
-				
+
 				# Trees
 				new_value[0] = value[0]
 				new_value[2] = value[2]
@@ -155,21 +156,21 @@ def mergeQuartetDictionaries(list_of_dictionaries, bootstrap_cutoff):
 
 # TEST getAllQuartetsAsDictionary
 # trees = readTreeFile("../for_isaac2/for_issac/RAxML_bootstrap.orfg3_5")
-trees = readTreeFile("../for_isaac2/for_issac/RAxML_bootstrap.orfg1")
+# trees = readTreeFile("../for_isaac2/for_issac/RAxML_bootstrap.orfg1")
 # trees = readTreeFile("testTree.txt")
 
-dictonary_of_quartets_1 = getAllQuartetsAsDictionary(trees)
+# dictonary_of_quartets_1 = getAllQuartetsAsDictionary(trees)
 
 # trees = readTreeFile("../for_isaac2/for_issac/RAxML_bootstrap.orfg1")
-dictonary_of_quartets_3_5 = getAllQuartetsAsDictionary(trees)
+# dictonary_of_quartets_3_5 = getAllQuartetsAsDictionary(trees)
 
 
-final_dictionary = mergeQuartetDictionaries([dictonary_of_quartets_1, dictonary_of_quartets_3_5], 8)
+# final_dictionary = mergeQuartetDictionaries([dictonary_of_quartets_1, dictonary_of_quartets_3_5], 8)
 
-counter = 0
-for key in final_dictionary:
-	print "{0} - {1}: {2}".format(counter, key, final_dictionary[key])
-	counter += 1
+# counter = 0
+# for key in final_dictionary:
+# 	print "{0} - {1}: {2}".format(counter, key, final_dictionary[key])
+# 	counter += 1
 
 
 
@@ -206,3 +207,98 @@ for key in final_dictionary:
 	# t = readTreeFile("../for_isaac2/for_issac/RAxML_bootstrap.orfg1")[0]
 	# print len(t)
 	# pprint(len(combinationsOfLeaves(t)))
+
+
+
+# input (list of branches, dictionary)
+# for each branch:
+#   generate all possible quartets (make bipartition, take all combinations of 2 for all combinations of 2 on the other side)
+#   for each quartet:
+#     if the quartet exists in the dictionary:
+#       if the most frequent topology matches that of the reference tree -> map a 1
+#       else -> -1
+#       multiply the 1/-1 by the IC value to give it a weight
+#    sum these values for all the quartets and place that value on the branch
+
+def buildTree(referenceTreeFile, quartet_dictionary):
+	# referenceTree = dendropy.Tree.get(path=referenceTreeFile, schema="newick")
+	referenceTree = dendropy.Tree.get(data=referenceTreeFile, schema="newick")
+	# print referenceTree
+	tn = referenceTree.taxon_namespace
+	print tn.labels()[::-1]
+
+	splits = getListOfSplits(tn, referenceTree)
+	print splits
+
+
+def getListOfSplits(taxonNamespace, tree):
+	splits = []
+
+	for bipartition in tree.encode_bipartitions():
+		leafset = bipartition.leafset_taxa(taxonNamespace)
+		# print len(leafset)
+
+		# or len(leafset) == len(taxonNamespace) + 1 or len(leafset) == 1
+		if len(leafset) == len(taxonNamespace):
+			continue
+
+		# tempTree = tree.clone()
+		# tempTree2 = tree.clone()
+		#
+		# tempTree.prune_taxa(bipartition.leafset_taxa(taxonNamespace))
+		# tempTree2.retain_taxa(bipartition.leafset_taxa(taxonNamespace))
+		#
+		# # Must have at least 2 leaves to form a quartet
+		# if (len(tempTree.leaf_nodes()) < 2 or len(tempTree2.leaf_nodes()) < 2):
+		# 	continue
+
+		# print bipartition.split_as_bitstring() + " => " + bipartition.split_as_newick_string(taxonNamespace)
+		splits.append(getTaxaFromBipartition(taxonNamespace, bipartition))
+
+	return len(splits)
+
+
+
+
+# returns an object with 'left' and 'right' lists of taxa
+# 1->left, 0->right
+def getTaxaFromBipartition(taxonNamespace, bipartition):
+	right = []
+	left = []
+
+	bString = bipartition.split_as_bitstring()
+
+	index = len(taxonNamespace.labels()) - 1 # start at end because LSB
+	for label in taxonNamespace.labels():
+		if index < 0:
+			break
+		if bString[index] is '1':
+			left.append(taxonNamespace.get_taxon(label))
+			# left.append(label)
+		else:
+			right.append(taxonNamespace.get_taxon(label))
+			# right.append(label)
+		index -= 1
+
+	returnObject = {
+		'right': right,
+		'left': left
+	}
+
+	return returnObject
+
+
+
+
+
+
+s = "((A,B),(C,D));((A,C),(B,D));"
+t = "((A,B),((C,((D,(E,(F,G))),H)),(((I,(J,K)),(L,M)),N)),O);"
+# tree will be '((A,B),(C,D))'
+# buildTree("./for_issac/complete/RAxML_bestTree.orfg1.last_2", {})
+buildTree(t, {})
+
+
+
+
+# sms6044

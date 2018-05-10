@@ -228,9 +228,19 @@ def buildTree(referenceTreeFile, quartet_dictionary):
 	print tn.labels()[::-1]
 
 	splits = getListOfSplits(tn, referenceTree)
-	print splits
+	# print splits, len(splits)
+
+	# for split_object in splits:
+	split_object = splits[0]
+	left_combinations = list(combinations(split_object['left'], 2))
+	right_combinations = list(combinations(split_object['right'], 2))
+	# print(split_object['left'])
+	# print(split_object['right'])
+	# print(left_combinations)
+	# print(right_combinations)
 
 
+# List of objects with a right and a left
 def getListOfSplits(taxonNamespace, tree):
 	splits = []
 
@@ -239,8 +249,8 @@ def getListOfSplits(taxonNamespace, tree):
 		# print len(leafset)
 
 		# or len(leafset) == len(taxonNamespace) + 1 or len(leafset) == 1
-		if len(leafset) == len(taxonNamespace):
-			continue
+		# if len(leafset) == len(taxonNamespace):
+		# 	continue
 
 		# tempTree = tree.clone()
 		# tempTree2 = tree.clone()
@@ -253,11 +263,11 @@ def getListOfSplits(taxonNamespace, tree):
 		# 	continue
 
 		# print bipartition.split_as_bitstring() + " => " + bipartition.split_as_newick_string(taxonNamespace)
-		splits.append(getTaxaFromBipartition(taxonNamespace, bipartition))
+		split_object = getTaxaFromBipartition(taxonNamespace, bipartition)
+		if split_object is not None:
+			splits.append(split_object)
 
-	return len(splits)
-
-
+	return splits
 
 
 # returns an object with 'left' and 'right' lists of taxa
@@ -280,12 +290,15 @@ def getTaxaFromBipartition(taxonNamespace, bipartition):
 			# right.append(label)
 		index -= 1
 
-	returnObject = {
+	return_object = {
 		'right': right,
 		'left': left
 	}
 
-	return returnObject
+	if len(return_object['left']) < 2 or len(return_object['right']) < 2:
+		return None
+
+	return return_object
 
 
 
@@ -297,8 +310,3 @@ t = "((A,B),((C,((D,(E,(F,G))),H)),(((I,(J,K)),(L,M)),N)),O);"
 # tree will be '((A,B),(C,D))'
 # buildTree("./for_issac/complete/RAxML_bestTree.orfg1.last_2", {})
 buildTree(t, {})
-
-
-
-
-# sms6044

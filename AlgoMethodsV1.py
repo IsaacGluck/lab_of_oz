@@ -5,6 +5,7 @@ from math import log
 from pprint import pprint
 import timeit
 import dendropy
+from dendropy.calculate import treecompare
 
 # Returns a list of the bootstrap sample trees
 # File MUST have a new line at the end
@@ -220,6 +221,7 @@ def mergeQuartetDictionaries(list_of_dictionaries, bootstrap_cutoff):
 #       multiply the 1/-1 by the IC value to give it a weight
 #    sum these values for all the quartets and place that value on the branch
 
+# dictionary structure [t1, P(t1), t2, P(t2), t3, P(t3), IQ]
 def buildTree(referenceTreeFile, quartet_dictionary):
 	# referenceTree = dendropy.Tree.get(path=referenceTreeFile, schema="newick")
 	referenceTree = dendropy.Tree.get(data=referenceTreeFile, schema="newick")
@@ -239,34 +241,47 @@ def buildTree(referenceTreeFile, quartet_dictionary):
 	# print(left_combinations)
 	# print(right_combinations)
 
+	for left_combination in left_combinations:
+		for right_combination in right_combinations:
+			combined_taxa = (left_combination + right_combination)
+			quartet_dictionary_key = tuple(taxa.label for taxa in combined_taxa)
+			if quartet_dictionary_key in quartet_dictionary:
+				extracted_tree = referenceTree.extract_tree_with_taxa(combined_taxa)
+				quartet_dictionary_value = quartet_dictionary[quartet_dictionary_key]
 
-# List of objects with a right and a left
+				# indices of tree structures in dictionary
+				support_value = -1
+				# for i in [0, 2, 4]:
+				# 	if treecompare.weighted_robinson_foulds_distance(extracted_tree, quartet_dictionary_value[i]) is 0:
+				# 		if max(quartet_dictionary_value[1], quartet_dictionary_value[3], quartet_dictionary_value[5]) == quartet_dictionary_value[i+1]:
+				# 			support_value = 1
+				support_value *= quartet_dictionary_value[6]
+				# print support_value
+
+
+# List of objects with a 'right', a 'left', and an 'edge'
 def getListOfSplits(taxonNamespace, tree):
 	splits = []
 
-	for bipartition in tree.encode_bipartitions():
-		leafset = bipartition.leafset_taxa(taxonNamespace)
-		# print len(leafset)
+	tree.encode_bipartitions()
+	for node in tree:
+		leafset = node.edge.bipartition.leafset_taxa(taxonNamespace)
 
-		# or len(leafset) == len(taxonNamespace) + 1 or len(leafset) == 1
-		# if len(leafset) == len(taxonNamespace):
-		# 	continue
 
-		# tempTree = tree.clone()
-		# tempTree2 = tree.clone()
-		#
-		# tempTree.prune_taxa(bipartition.leafset_taxa(taxonNamespace))
-		# tempTree2.retain_taxa(bipartition.leafset_taxa(taxonNamespace))
-		#
-		# # Must have at least 2 leaves to form a quartet
-		# if (len(tempTree.leaf_nodes()) < 2 or len(tempTree2.leaf_nodes()) < 2):
-		# 	continue
-
-		# print bipartition.split_as_bitstring() + " => " + bipartition.split_as_newick_string(taxonNamespace)
-		split_object = getTaxaFromBipartition(taxonNamespace, bipartition)
+		split_object = getTaxaFromBipartition(taxonNamespace, node.edge.bipartition)
 		if split_object is not None:
+			split_object['edge'] = node.edge
 			splits.append(split_object)
 
+	# for bipartition in tree.encode_bipartitions():
+	# 	leafset = bipartition.leafset_taxa(taxonNamespace)
+	#
+	# 	split_object = getTaxaFromBipartition(taxonNamespace, bipartition)
+	# 	if split_object is not None:
+	# 		splits.append(split_object)
+
+	# for node in tree:
+	# 	print("{}: {}".format(node.edge, node.edge.bipartition.leafset_as_bitstring()))
 	return splits
 
 
@@ -309,4 +324,85 @@ s = "((A,B),(C,D));((A,C),(B,D));"
 t = "((A,B),((C,((D,(E,(F,G))),H)),(((I,(J,K)),(L,M)),N)),O);"
 # tree will be '((A,B),(C,D))'
 # buildTree("./for_issac/complete/RAxML_bestTree.orfg1.last_2", {})
-buildTree(t, {})
+# quartet_dictionary = {('C', 'D', 'A', 'B'): ['test']}
+quartet_dictionary = {
+	('C', 'D', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('C', 'E', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('C', 'F', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('C', 'G', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('C', 'H', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('C', 'I', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('C', 'J', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('C', 'K', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('C', 'L', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('C', 'M', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('C', 'N', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('C', 'O', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('D', 'E', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('D', 'F', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('D', 'G', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('D', 'H', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('D', 'I', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('D', 'J', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('D', 'K', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('D', 'L', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('D', 'M', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('D', 'N', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('D', 'O', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('E', 'F', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('E', 'G', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('E', 'H', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('E', 'I', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('E', 'J', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('E', 'K', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('E', 'L', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('E', 'M', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('E', 'N', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('E', 'O', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('F', 'G', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('F', 'H', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('F', 'I', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('F', 'J', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('F', 'K', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('F', 'L', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('F', 'M', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('F', 'N', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('F', 'O', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('G', 'H', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('G', 'I', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('G', 'J', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('G', 'K', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('G', 'L', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('G', 'M', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('G', 'N', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('G', 'O', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('H', 'I', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('H', 'J', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('H', 'K', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('H', 'L', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('H', 'M', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('H', 'N', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('H', 'O', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('I', 'J', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('I', 'K', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('I', 'L', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('I', 'M', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('I', 'N', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('I', 'O', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('J', 'K', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('J', 'L', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('J', 'M', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('J', 'N', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('J', 'O', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('K', 'L', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('K', 'M', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('K', 'N', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('K', 'O', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('L', 'M', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('L', 'N', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('L', 'O', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('M', 'N', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('M', 'O', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1],
+	('N', 'O', 'A', 'B'): [dendropy.Tree.get(data=t, schema="newick"), .3, dendropy.Tree.get(data=t, schema="newick"), .5, dendropy.Tree.get(data=t, schema="newick"), .2, 1]
+}
+buildTree(t, quartet_dictionary)

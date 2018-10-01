@@ -4,8 +4,8 @@
 Python Scripts; working towards a *Novel Algorithm to Detect Exchange of Genetic Material Among Microorganisms*.
 
 ### Required Libraries
-[ETE Toolkit](https://www.etetoolkit.org)
-[Dendropy](https://dendropy.org/)
+- [ETE Toolkit](https://www.etetoolkit.org)
+- [Dendropy](https://dendropy.org/)
 
 ### Pseudocode
 

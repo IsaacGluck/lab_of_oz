@@ -19,7 +19,7 @@ def readTreeFile(filename):
     trees.add(line)
   return trees
 ```
-
+<br/>
 
 2. Take a list of trees, return all unique combinations of 4 taxa as keys (using tuples) in a dictionary
   - **Dictionary Structure** { (a, b, c, d): [t1, b1, t2, b2, t3, b3] }
@@ -36,7 +36,7 @@ def getQuartets(trees):
 
   return quartet_dictionary
 ```
-
+<br/>
 
 3. Takes a list of trees and a quartet dictionary, returns the dictionary with filled in support values
 
@@ -49,7 +49,7 @@ def getQuartetSupport(trees, quartet_dictionary):
         quartet_dictionary[quartet][quartet_topology] += 1
   return quartet_dictionary
 ```
-
+<br/>
 
 4. Take in the quartet dictionary and a bootstrap cutoff value, normalize the bootstrap values (if above the cutoff), and calculate internode certainty, return the quartet dictionary with IC values as the last item of each list
 
@@ -62,7 +62,7 @@ def getInternodeCertainty(quartet_dictionary, bootstrap_cutoff):
         ic += (quartet[topology] * log(quartet[topology], 3)) # P(ti) * log base 3 of P(ti)
   return quartet_dictionary
 ```
-
+<br/>
 
 5. Takes a reference tree filename and a quartet_dictionary, returns the reference tree with support values mapped onto its branches
 
@@ -91,5 +91,4 @@ def buildSupportTree(referenceTreeFile, quartet_dictionary):
           total_support += support_value
     add_tag(branch, total_support)
   return reference_tree
-
 ```

@@ -11,6 +11,9 @@ def readTrees(filenames):
         sample_tree_list.read(file=open(f, 'r'), schema="newick")
     return sample_tree_list
 
+# Test
+sample_tree_list = readTrees(['testTree.txt'])
+print(sample_tree_list)
 
 # Input: Dendropy TreeList object
 # Output: Quartet dictionary with all unique quartets from the tree_list

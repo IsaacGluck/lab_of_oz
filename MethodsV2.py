@@ -4,11 +4,13 @@ from dendropy.calculate import treecompare
 from itertools import combinations
 from math import log
 from pprint import pprint
+import json
 
 
 # Input: list of files with trees (requires newick format)
 # Output: A list of Dendropy TreeList objects with all the bootstrap trees for a gene tree in each
 def readTrees(filenames):
+    print("Reading in files...")
     sample_tree_list = []
     for f in filenames:
         temp = TreeList()
@@ -24,6 +26,7 @@ sample_tree_list = readTrees(['for_issac/complete/RAxML_bootstrap.orfg1.last_2']
 # Input: Dendropy TreeList object
 # Output: Quartet dictionary with all unique quartets from the tree_list
 def makeQuartetDictionary(tree_list):
+    print("Making the quartet dictionary...")
     taxon_label_list = tree_list.taxon_namespace.labels()
     combinations_of_taxa = combinations(taxon_label_list, 4)
 
@@ -90,8 +93,7 @@ def getTreeQuartetSupport(tree, quartet_dictionary):
             print()
             print("Sorted quartet:", sorted_quartet)
             print("\n")
-            # print(single_tree_list[0].as_ascii_plot())
-            # print(single_tree_list[0])
+            print(single_tree_list[0].as_ascii_plot())
             quit()
 
     return quartet_dictionary
@@ -105,6 +107,7 @@ def getTreeQuartetSupport(tree, quartet_dictionary):
 # Input: An array of Dendropy TreeLists, a bootstrap cutoff value defaulting to 80
 # Output: The full quartet dictionary for all gene trees containing P(t) and IC values
 def buildFullSupport(gene_tree_list, bootstrap_cutoff_value=80):
+    print("Combining gene tree data into one dictionary...")
     full_quartet_dictionary = {}
 
     for bootstrap_tree_list in gene_tree_list:
@@ -121,8 +124,8 @@ def buildFullSupport(gene_tree_list, bootstrap_cutoff_value=80):
             else:
                 full_quartet_dictionary[quartet][6] += 1.0
             full_quartet_dictionary[quartet][1] += (1.0 if quartet_dictionary[quartet][1] > bootstrap_cutoff_value else 0.0)
-            full_quartet_dictionary[quartet][3] += (1.0 if quartet_dictionary[quartet][1] > bootstrap_cutoff_value else 0.0)
-            full_quartet_dictionary[quartet][5] += (1.0 if quartet_dictionary[quartet][1] > bootstrap_cutoff_value else 0.0)
+            full_quartet_dictionary[quartet][3] += (1.0 if quartet_dictionary[quartet][3] > bootstrap_cutoff_value else 0.0)
+            full_quartet_dictionary[quartet][5] += (1.0 if quartet_dictionary[quartet][5] > bootstrap_cutoff_value else 0.0)
 
     # full_quartet_dictionary now has all the support vectors, s(t)
     # Next we must normalize the support vectors: p(t) = s(ti)/(s(t1) + s(t2) + s(t3))

@@ -21,10 +21,18 @@ def readTrees(filenames):
 
 
 # TEST readTrees
-# sample_tree_list = readTrees(['testTree.txt'])
-# sample_tree_list = readTrees(['test_highest_support_tree.txt'])
-# sample_tree_list = readTrees(['test_high_support.txt'])
-sample_tree_list = readTrees(['test_high_support.txt', 'test_highest_support_tree.txt'])
+# sample_tree_list = readTrees(['test_trees/highest_support.txt', 'test_trees/highest_support.txt'])
+# sample_tree_list = readTrees(['test_trees/low_resolution.txt', 'test_trees/low_resolution.txt'])
+# sample_tree_list = readTrees(['test_trees/low_support.txt', 'test_trees/low_support.txt'])
+# sample_tree_list = readTrees(['test_trees/medium_support.txt', 'test_trees/medium_support.txt'])
+
+
+# sample_tree_list = readTrees(['test_trees/highest_support.txt', 'test_trees/low_support.txt'])
+# sample_tree_list = readTrees(['test_trees/highest_support.txt', 'test_trees/medium_support.txt'])
+# sample_tree_list = readTrees(['test_trees/highest_support.txt', 'test_trees/low_resolution.txt'])
+# sample_tree_list = readTrees(['test_trees/low_support.txt', 'test_trees/low_resolution.txt'])
+# sample_tree_list = readTrees(['test_trees/low_support.txt', 'test_trees/medium_support.txt'])
+
 # 'for_issac/complete/RAxML_bootstrap.orfg3_5.last_2'
 
 # Input: Dendropy TreeList object
@@ -75,7 +83,7 @@ def getTreeQuartetSupport(tree, quartet_dictionary):
             single_tree_list.append(
                 tree.extract_tree_with_taxa_labels(quartet))
 
-            # print(sorted_quartet, single_tree_list.frequency_of_bipartition(labels=[sorted_quartet[0], sorted_quartet[1]]),
+            # print(sorted_quartet, single_tree_list.frequency_of_bipartition(labels=[sorted_quartet[x], sorted_quartet[1]]),
             #                       single_tree_list.frequency_of_bipartition(labels=[sorted_quartet[0], sorted_quartet[2]]),
             #                       single_tree_list.frequency_of_bipartition(labels=[sorted_quartet[0], sorted_quartet[3]]))
 
@@ -128,6 +136,8 @@ def buildFullSupport(gene_tree_list, bootstrap_cutoff_value=80):
         quartet_dictionary = makeQuartetDictionary(bootstrap_tree_list)
         for tree in bootstrap_tree_list:
             getTreeQuartetSupport(tree, quartet_dictionary)
+        print()
+        print("Full quartet dictionary:")
         [print(quartet, quartet_dictionary[quartet]) for quartet in quartet_dictionary]
         print()
 
@@ -145,6 +155,12 @@ def buildFullSupport(gene_tree_list, bootstrap_cutoff_value=80):
                 1.0 if quartet_dictionary[quartet][3] >= bootstrap_cutoff_value else 0.0)
             full_quartet_dictionary[quartet][5] += (
                 1.0 if quartet_dictionary[quartet][5] >= bootstrap_cutoff_value else 0.0)
+
+
+    print("Full quartet dictionary with support values MIDDLE")
+    [print(quartet, full_quartet_dictionary[quartet])
+           for quartet in full_quartet_dictionary]
+    print()
 
     # full_quartet_dictionary now has all the support vectors, s(t)
     # Next we must normalize the support vectors: p(t) = s(ti)/(s(t1) + s(t2) + s(t3))
@@ -171,9 +187,11 @@ def buildFullSupport(gene_tree_list, bootstrap_cutoff_value=80):
 
 
 # TEST buildFullSupport
-full_quartet_dictionary = buildFullSupport(sample_tree_list, 8)
-[print(quartet, full_quartet_dictionary[quartet])
-       for quartet in full_quartet_dictionary]
+# full_quartet_dictionary = buildFullSupport(sample_tree_list, 8)
+# print("Full quartet dictionary with support values")
+# [print(quartet, full_quartet_dictionary[quartet])
+#        for quartet in full_quartet_dictionary]
+# print()
 
 
 def buildLabeledTree(referenceTreeFile, full_quartet_dictionary):
@@ -189,10 +207,14 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary):
 
     for split_object in splits:
         if 'left' not in split_object:
-            split_object['edge'].length = 0
+            # split_object['edge'].length = 0
             continue
         left_combinations = list(combinations(split_object['left'], 2))
         right_combinations = list(combinations(split_object['right'], 2))
+
+        total_possibilities = len(left_combinations) * len(right_combinations)
+
+        total_support_value = 0
 
         for left_combination in left_combinations:
             for right_combination in right_combinations:
@@ -212,10 +234,13 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary):
                     results = [result0, result1, result2]
                     for i in range(3):
                         if results[i] > 0:
-                            if max(quartet_dictionary_value[1], quartet_dictionary_value[3], quartet_dictionary_value[5]) == quartet_dictionary_value[(i * 2) + 1]:
+                            max_val = max(quartet_dictionary_value[1], quartet_dictionary_value[3], quartet_dictionary_value[5])
+                            if max_val == quartet_dictionary_value[(i * 2) + 1] and max_val != 0:
                                 support_value = 1
                     support_value *= quartet_dictionary_value[6]
-                    split_object['edge'].length = support_value
+                    total_support_value += support_value
+        split_object['edge'].head_node.label = total_support_value / total_possibilities
+    print()
     print(reference_tree.as_string(schema="newick"))
     reference_tree.write(path="output_tree.txt", schema="newick")
 
@@ -268,7 +293,7 @@ def getTaxaFromBipartition(taxonNamespace, bipartition):
 
 
 # TEST buildLabeledTree
-buildLabeledTree("test_reference_tree.txt", full_quartet_dictionary)
+# buildLabeledTree("test_trees/reference_tree.txt", full_quartet_dictionary)
 
 
 

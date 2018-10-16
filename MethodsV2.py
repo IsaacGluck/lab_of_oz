@@ -258,6 +258,7 @@ def getTaxaFromBipartition(taxonNamespace, bipartition):
     return return_object
 
 
+########## ARGPARSE
 def runProgram(referenceTreeFile, sampleTreeList, bootstrap_cutoff_value=80, output_tree="output_tree.tre", verbose=False, quiet=False):
     if verbose:
         print("Reference Tree: ", referenceTreeFile)

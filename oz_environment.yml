@@ -1,7 +1,4 @@
 name: oz
-channels:
-  - etetoolkit
-  - defaults
 dependencies:
   - blas=1.0
   - ca-certificates=2018.03.07
@@ -69,4 +66,3 @@ dependencies:
     - dendropy==4.4.0
     - pycodestyle==2.4.0
 prefix: /Users/isaacgluck/miniconda2/envs/oz
-

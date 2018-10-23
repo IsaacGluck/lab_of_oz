@@ -65,4 +65,8 @@ dependencies:
   - t_coffee=11.00=h5f19bac_0
   - trimal=1.4=h2778685_0
   - pip:
+    - autopep8==1.4
     - dendropy==4.4.0
+    - pycodestyle==2.4.0
+prefix: /Users/isaacgluck/miniconda2/envs/oz
+

@@ -1,4 +1,7 @@
 name: oz
+channels:
+  - etetoolkit
+  - defaults
 dependencies:
   - blas=1.0
   - ca-certificates=2018.03.07

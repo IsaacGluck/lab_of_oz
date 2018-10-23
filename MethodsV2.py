@@ -211,8 +211,10 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
                     total_support_value += support_value
         split_object['edge'].head_node.label = total_support_value / total_possibilities
     if not quiet:
-        print(reference_tree.as_string(schema="newick"))
-    reference_tree.write(path=output_tree, schema="newick")
+        print(reference_tree.as_string(schema="newick", suppress_internal_node_labels=False))
+    reference_tree.write(path=output_tree, schema="newick", suppress_internal_node_labels=False)
+    # for node in reference_tree:
+    #     print(node.taxon, node.label)
 
 
 def getListOfSplits(taxonNamespace, tree):
@@ -274,7 +276,8 @@ def runProgram(referenceTreeFile, sampleTreeList, bootstrap_cutoff_value=80, out
         print()
     buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree, quiet)
 
-
+# ./MethodsV2.py run_files/RAxML_bestTree.rcGTA_cat run_files/RAxML_bootstrap.orfg1.last_2 run_files/RAxML_bootstrap.orfg10.last_2 run_files/RAxML_bootstrap.orfg10_5.last_3 run_files/RAxML_bootstrap.orfg11.last_2 run_files/RAxML_bootstrap.orfg12.last_2 run_files/RAxML_bootstrap.orfg13.last_2 run_files/RAxML_bootstrap.orfg14.last_2 run_files/RAxML_bootstrap.orfg15.last_2 run_files/RAxML_bootstrap.orfg2.last_2 run_files/RAxML_bootstrap.orfg3.last_2 run_files/RAxML_bootstrap.orfg3_5.last_2 run_files/RAxML_bootstrap.orfg4.last_2 run_files/RAxML_bootstrap.orfg5.last_2 run_files/RAxML_bootstrap.orfg6.last_2 run_files/RAxML_bootstrap.orfg7.last_2 run_files/RAxML_bootstrap.orfg8.last_2 run_files/RAxML_bootstrap.orfg9.last_2 -v > run_output.txt
+# ./MethodsV2.py test_trees/reference_tree.txt test_trees/highest_support.txt test_trees/highest_support.txt
 parser = argparse.ArgumentParser()
 parser.add_argument("reference_tree_file", metavar='Reference Tree Files', help="The path of the reference tree file")
 parser.add_argument('bootstrap_gene_tree_files', metavar='Bootstrap Tree Files', nargs='+',

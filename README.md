@@ -4,13 +4,12 @@
 Python Scripts; working towards a *Novel Algorithm to Detect Exchange of Genetic Material Among Microorganisms*.
 
 ### Required Libraries
-- [ETE Toolkit](https://www.etetoolkit.org)
 - [Dendropy](https://dendropy.org/)
 
 ### Pseudocode
 
-1. Read in bootstrap sample gene trees from a file, return dendropy trees
-
+1. User I/O of M gene trees with bootstrap sample trees
+  - Read in bootstrap sample gene trees from a file, return dendropy trees
 ```python
 def readTreeFile(filename):
   file = open_file(filename)
@@ -21,12 +20,12 @@ def readTreeFile(filename):
 ```
 <br/>
 
-2. Take a list of trees, return all unique combinations of 4 taxa as keys (using tuples) in a dictionary
-  - **Dictionary Structure** { (a, b, c, d): [t1, b1, t2, b2, t3, b3] }
-    - a-d are taxa names, t1-3 are the possible topologies and b1-3 are their bootstrap support values.
-
+2. Decompose the gene trees into all possible quartets.
+  - Take a list of trees, return all unique combinations of 4 taxa as keys (using tuples) in a dictionary
+    - **Dictionary Structure** { (a, b, c, d): [t1, b1, t2, b2, t3, b3] }
+      - a-d are taxa names, t1-3 are the possible topologies and b1-3 will be their bootstrap support values.
 ```python
-def getQuartets(trees):
+def makeQuartetDictionary(trees):
   quartet_dictionary = {}
 
   for tree in trees:
@@ -38,10 +37,10 @@ def getQuartets(trees):
 ```
 <br/>
 
-3. Takes a list of trees and a quartet dictionary, returns the dictionary with filled in support values
-
+3. (continuation of 2.) Calculate bootstrap support for the quartets in the gene tree
+  - Takes a tree and a quartet dictionary, returns the dictionary with filled in support values
 ```python
-def getQuartetSupport(trees, quartet_dictionary):
+def getTreeQuartetSupport(tree, quartet_dictionary):
   for quartet in quartet_dictionary:
     for tree in trees:
       quartet_topology = get_quartet_topology(quartet, tree)
@@ -51,10 +50,10 @@ def getQuartetSupport(trees, quartet_dictionary):
 ```
 <br/>
 
-4. Take in the quartet dictionary and a bootstrap cutoff value, normalize the bootstrap values (if above the cutoff), and calculate internode certainty, return the quartet dictionary with IC values as the last item of each list
-
+4. Summarize quartet support on all M gene trees. Calculate the IC values for all quartets.
+  - Take in the quartet dictionary and a bootstrap cutoff value, normalize the bootstrap values (if above the cutoff), and calculate internode certainty, return the quartet dictionary with IC values as the last item of each list
 ```python
-def getInternodeCertainty(quartet_dictionary, bootstrap_cutoff):
+def buildFullSupport(quartet_dictionary, bootstrap_cutoff):
   for quartet in quartet_dictionary:
     normalize(quartet) # { (a,b,c,d): [t1, P(t1), t2, P(t2), t3, P(t3), IC] }
     for topology in quartet:
@@ -64,8 +63,8 @@ def getInternodeCertainty(quartet_dictionary, bootstrap_cutoff):
 ```
 <br/>
 
-5. Takes a reference tree filename and a quartet_dictionary, returns the reference tree with support values mapped onto its branches
-
+5. Calculate QC branch values for each branch on the reference tree. Map these onto the tree.
+  - Takes a reference tree filename and a quartet_dictionary, returns the reference tree with support values mapped onto its branches
 ```python
 def buildSupportTree(referenceTreeFile, quartet_dictionary):
   reference_tree = readTreeFile(referenceTreeFile)

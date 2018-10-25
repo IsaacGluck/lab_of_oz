@@ -280,15 +280,15 @@ def runProgram(referenceTreeFile, sampleTreeList, bootstrap_cutoff_value=80, out
 # ./MethodsV2 run_files/RAxML_bestTree.rcGTA_cat run_files/RAxML_bootstrap.orfg1.last_2.subSample run_files/RAxML_bootstrap.orfg10.last_2.subSample run_files/RAxML_bootstrap.orfg10_5.last_3.subSample run_files/RAxML_bootstrap.orfg11.last_2.subSample run_files/RAxML_bootstrap.orfg12.last_2.subSample run_files/RAxML_bootstrap.orfg13.last_2.subSample run_files/RAxML_bootstrap.orfg14.last_2.subSample run_files/RAxML_bootstrap.orfg15.last_2.subSample run_files/RAxML_bootstrap.orfg2.last_2.subSample run_files/RAxML_bootstrap.orfg3.last_2.subSample run_files/RAxML_bootstrap.orfg3_5.last_2.subSample run_files/RAxML_bootstrap.orfg4.last_2.subSample run_files/RAxML_bootstrap.orfg5.last_2.subSample run_files/RAxML_bootstrap.orfg6.last_2.subSample run_files/RAxML_bootstrap.orfg7.last_2.subSample run_files/RAxML_bootstrap.orfg8.last_2.subSample run_files/RAxML_bootstrap.orfg9.last_2.subSample -v -c 8 > run_output.txt
 # ./MethodsV2.py test_trees/reference_tree.txt test_trees/highest_support.txt test_trees/highest_support.txt
 parser = argparse.ArgumentParser()
-parser.add_argument("reference_tree_file", metavar='Reference Tree Files', help="The path of the reference tree file")
-parser.add_argument('bootstrap_gene_tree_files', metavar='Bootstrap Tree Files', nargs='+',
+parser.add_argument("reference_tree_file", metavar='<Reference Tree File>', help="The path of the reference tree file")
+parser.add_argument('bootstrap_gene_tree_files', metavar='<Bootstrap Tree Files>', nargs='+',
                     help='The gene tree file paths containing bootstrap trees')
 parser.add_argument("-v", "--verbose", action="store_true", default=False)
 parser.add_argument("-q", "--quiet", action="store_true", default=False)
 parser.add_argument("-c", "--cutoff", default=80, type=int,
                     help="Bootstrap Cutoff Value")
 parser.add_argument("-o", "--output_file", default="output_tree.tre",
-                    help="Output file for resulting tree with support")
+                    help="Output file for resulting tree with support. The default is 'output_tree.tre'")
 args = parser.parse_args()
 # runProgram(referenceTreeFile, sampleTreeList, bootstrap_cutoff_value=80, output_tree="output_tree.tre", verbose=False, quiet=False):
 runProgram(args.reference_tree_file, args.bootstrap_gene_tree_files,

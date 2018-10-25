@@ -8,25 +8,25 @@ Reading in files...
 Combining gene tree data into one dictionary...
 
 Full quartet dictionary:
-frozenset({'B', 'E', 'D', 'A'}) [<Tree object at 0x10d687e80>, 5, <Tree object at 0x10d66bfd0>, 3, <Tree object at 0x10d68d048>, 2]
-frozenset({'B', 'E', 'C', 'A'}) [<Tree object at 0x10d687c18>, 4, <Tree object at 0x10d687d68>, 5, <Tree object at 0x10d687fd0>, 1]
-frozenset({'B', 'C', 'A', 'D'}) [<Tree object at 0x10d68d128>, 4, <Tree object at 0x10d68d160>, 5, <Tree object at 0x10d687c50>, 1]
-frozenset({'E', 'C', 'A', 'D'}) [<Tree object at 0x10d687e48>, 6, <Tree object at 0x10d69f7b8>, 2, <Tree object at 0x10d67c3c8>, 2]
-frozenset({'B', 'E', 'C', 'D'}) [<Tree object at 0x10d699da0>, 5, <Tree object at 0x10d69f128>, 2, <Tree object at 0x10d69f470>, 3]
+frozenset({'A', 'B', 'D', 'E'}) [<Tree object at 0x10d630978>, 5, <Tree object at 0x10d630a58>, 3, <Tree object at 0x10d630da0>, 2]
+frozenset({'C', 'A', 'B', 'E'}) [<Tree object at 0x10d630d30>, 4, <Tree object at 0x10d630d68>, 5, <Tree object at 0x10d630940>, 1]
+frozenset({'C', 'A', 'B', 'D'}) [<Tree object at 0x10d630828>, 4, <Tree object at 0x10d61edd8>, 5, <Tree object at 0x10d630cf8>, 1]
+frozenset({'C', 'A', 'D', 'E'}) [<Tree object at 0x10d630dd8>, 6, <Tree object at 0x10d630860>, 2, <Tree object at 0x10d635eb8>, 2]
+frozenset({'C', 'B', 'D', 'E'}) [<Tree object at 0x10d63cf60>, 5, <Tree object at 0x10d630a90>, 2, <Tree object at 0x10d6354e0>, 3]
 
 Full quartet dictionary:
-frozenset({'B', 'E', 'D', 'A'}) [<Tree object at 0x10d6cb2e8>, 5, <Tree object at 0x10d6cb470>, 3, <Tree object at 0x10d6c6e80>, 2]
-frozenset({'B', 'E', 'C', 'A'}) [<Tree object at 0x10d6c67f0>, 4, <Tree object at 0x10d6c6be0>, 5, <Tree object at 0x10d6c6dd8>, 1]
-frozenset({'B', 'C', 'A', 'D'}) [<Tree object at 0x10d6c6ef0>, 4, <Tree object at 0x10d6c6160>, 5, <Tree object at 0x10d6c6b38>, 1]
-frozenset({'E', 'C', 'A', 'D'}) [<Tree object at 0x10d6c60b8>, 6, <Tree object at 0x10d6c65f8>, 2, <Tree object at 0x10d6c6cf8>, 2]
-frozenset({'B', 'E', 'C', 'D'}) [<Tree object at 0x10d6c6358>, 5, <Tree object at 0x10d6c6da0>, 2, <Tree object at 0x10d6c66d8>, 3]
+frozenset({'A', 'B', 'D', 'E'}) [<Tree object at 0x10d65f7f0>, 5, <Tree object at 0x10d65f7b8>, 3, <Tree object at 0x10d65fc18>, 2]
+frozenset({'C', 'A', 'B', 'E'}) [<Tree object at 0x10d65fa90>, 4, <Tree object at 0x10d65f978>, 5, <Tree object at 0x10d65fb70>, 1]
+frozenset({'C', 'A', 'B', 'D'}) [<Tree object at 0x10d65f2e8>, 4, <Tree object at 0x10d65f630>, 5, <Tree object at 0x10d65fa58>, 1]
+frozenset({'C', 'A', 'D', 'E'}) [<Tree object at 0x10d65ffd0>, 6, <Tree object at 0x10d65fb00>, 2, <Tree object at 0x10d65fef0>, 2]
+frozenset({'C', 'B', 'D', 'E'}) [<Tree object at 0x10d6540b8>, 5, <Tree object at 0x10d648630>, 2, <Tree object at 0x10d65ff60>, 3]
 
 Full quartet dictionary with support values
-frozenset({'B', 'E', 'D', 'A'}) [<Tree object at 0x10d687e80>, 0.0, <Tree object at 0x10d66bfd0>, 0.0, <Tree object at 0x10d68d048>, 0.0, 1.0]
-frozenset({'B', 'E', 'C', 'A'}) [<Tree object at 0x10d687c18>, 0.0, <Tree object at 0x10d687d68>, 0.0, <Tree object at 0x10d687fd0>, 0.0, 1.0]
-frozenset({'B', 'C', 'A', 'D'}) [<Tree object at 0x10d68d128>, 0.0, <Tree object at 0x10d68d160>, 0.0, <Tree object at 0x10d687c50>, 0.0, 1.0]
-frozenset({'E', 'C', 'A', 'D'}) [<Tree object at 0x10d687e48>, 0.0, <Tree object at 0x10d69f7b8>, 0.0, <Tree object at 0x10d67c3c8>, 0.0, 1.0]
-frozenset({'B', 'E', 'C', 'D'}) [<Tree object at 0x10d699da0>, 0.0, <Tree object at 0x10d69f128>, 0.0, <Tree object at 0x10d69f470>, 0.0, 1.0]
+frozenset({'A', 'B', 'D', 'E'}) [<Tree object at 0x10d630978>, 0.0, <Tree object at 0x10d630a58>, 0.0, <Tree object at 0x10d630da0>, 0.0, 1.0]
+frozenset({'C', 'A', 'B', 'E'}) [<Tree object at 0x10d630d30>, 0.0, <Tree object at 0x10d630d68>, 0.0, <Tree object at 0x10d630940>, 0.0, 1.0]
+frozenset({'C', 'A', 'B', 'D'}) [<Tree object at 0x10d630828>, 0.0, <Tree object at 0x10d61edd8>, 0.0, <Tree object at 0x10d630cf8>, 0.0, 1.0]
+frozenset({'C', 'A', 'D', 'E'}) [<Tree object at 0x10d630dd8>, 0.0, <Tree object at 0x10d630860>, 0.0, <Tree object at 0x10d635eb8>, 0.0, 1.0]
+frozenset({'C', 'B', 'D', 'E'}) [<Tree object at 0x10d63cf60>, 0.0, <Tree object at 0x10d630a90>, 0.0, <Tree object at 0x10d6354e0>, 0.0, 1.0]
 
-[&R] (((A:0.5,B:0.5)'-1.0':0.5,E:0.5)'-1.0':0.5,(D:0.5,C:0.5)'-1.0':0.5);
+[&R] (((A,B)'-1.0',E)'-1.0',(D,C)'-1.0');
 

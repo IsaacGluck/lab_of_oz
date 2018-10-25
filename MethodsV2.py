@@ -46,10 +46,10 @@ def makeQuartetDictionary(tree_list):
             sorted_list_of_leaves[0], sorted_list_of_leaves[2], sorted_list_of_leaves[1], sorted_list_of_leaves[3])
         topology3 = "(({0},{1}),({2},{3}));".format(
             sorted_list_of_leaves[0], sorted_list_of_leaves[3], sorted_list_of_leaves[1], sorted_list_of_leaves[2])
-        dictonary_of_quartets[frozenset_of_leaves] = [Tree.get(data=topology1, taxon_namespace=tree_list.taxon_namespace, schema="newick"), 0,
+        dictonary_of_quartets[frozenset_of_leaves] = [Tree.get(data=topology1, taxon_namespace=tree_list.taxon_namespace, schema="newick", preserve_underscores=True), 0,
                                                   Tree.get(
-                                                      data=topology2, taxon_namespace=tree_list.taxon_namespace, schema="newick"), 0,
-                                                  Tree.get(data=topology3, taxon_namespace=tree_list.taxon_namespace, schema="newick"), 0]
+                                                      data=topology2, taxon_namespace=tree_list.taxon_namespace, schema="newick", preserve_underscores=True), 0,
+                                                  Tree.get(data=topology3, taxon_namespace=tree_list.taxon_namespace, schema="newick", preserve_underscores=True), 0]
 
     return dictonary_of_quartets
 
@@ -171,7 +171,7 @@ def buildFullSupport(gene_tree_list, bootstrap_cutoff_value=80, verbose=False, q
 
 
 def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="output_tree.tre", quiet=False):
-    reference_tree = Tree.get(path=referenceTreeFile, schema="newick")
+    reference_tree = Tree.get(path=referenceTreeFile, schema="newick", preserve_underscores=True)
     reference_tree.is_rooted = True
     reference_tree_list = TreeList()
     reference_tree_list.append(reference_tree)
@@ -274,21 +274,22 @@ def runProgram(referenceTreeFile, sampleTreeList, bootstrap_cutoff_value=80, out
     sample_tree_list = readTrees(sampleTreeList, quiet)
 
     try:
-        reference_tree = Tree.get(path=referenceTreeFile, schema="newick")
+        reference_tree = Tree.get(path=referenceTreeFile, schema="newick", preserve_underscores=True)
     except:
         print("Error with file '{}': please only use files with newick tree format".format(referenceTreeFile))
         sys.exit()
-    reference_tree.is_rooted = True
-    reference_tree_list = TreeList()
-    reference_tree_list.append(reference_tree)
 
     reference_tree_namespace = reference_tree.taxon_namespace
-    sample_namespace = sample_tree_list.taxon_namespace
+    # print(reference_tree_namespace.labels())
+    # print()
 
     # Check if gene tree taxon namespace matches reference tree
-    if not reference_tree_namespace.has_taxa_labels(sample_namespace.labels()):
-        print('Error: reference tree is of a different taxon namespace as the sample trees')
-        return
+    for s in sample_tree_list:
+        # print(s.taxon_namespace.labels())
+        if not reference_tree_namespace.has_taxa_labels(s.taxon_namespace.labels()):
+            print('Error: reference tree is of a different taxon namespace as the sample trees')
+            return
+
 
     full_quartet_dictionary = buildFullSupport(sample_tree_list, bootstrap_cutoff_value, verbose, quiet)
     if verbose:

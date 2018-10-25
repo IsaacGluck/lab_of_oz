@@ -6,6 +6,7 @@ from math import log
 from pprint import pprint
 import json
 import argparse
+import sys
 
 
 # Input: list of files with trees (requires newick format)
@@ -18,8 +19,11 @@ def readTrees(filenames, quiet=False):
     sample_tree_list = []
     for f in filenames:
         temp = TreeList()
-        temp.read(file=open(f, 'r'), schema="newick",
-                  preserve_underscores=True)
+        try:
+            temp.read(file=open(f, 'r'), schema="newick", preserve_underscores=True)
+        except:
+            print("Error with file '{}': please only use files with newick tree format".format(f))
+            sys.exit()
         sample_tree_list.append(temp)
     return sample_tree_list
 
@@ -268,6 +272,24 @@ def runProgram(referenceTreeFile, sampleTreeList, bootstrap_cutoff_value=80, out
         print("Bootstrap Cutoff Value: ", bootstrap_cutoff_value)
         print("Output Tree File: ", output_tree)
     sample_tree_list = readTrees(sampleTreeList, quiet)
+
+    try:
+        reference_tree = Tree.get(path=referenceTreeFile, schema="newick")
+    except:
+        print("Error with file '{}': please only use files with newick tree format".format(referenceTreeFile))
+        sys.exit()
+    reference_tree.is_rooted = True
+    reference_tree_list = TreeList()
+    reference_tree_list.append(reference_tree)
+
+    reference_tree_namespace = reference_tree.taxon_namespace
+    sample_namespace = sample_tree_list.taxon_namespace
+
+    # Check if gene tree taxon namespace matches reference tree
+    if not reference_tree_namespace.has_taxa_labels(sample_namespace.labels()):
+        print('Error: reference tree is of a different taxon namespace as the sample trees')
+        return
+
     full_quartet_dictionary = buildFullSupport(sample_tree_list, bootstrap_cutoff_value, verbose, quiet)
     if verbose:
         print("Full quartet dictionary with support values")
@@ -277,8 +299,7 @@ def runProgram(referenceTreeFile, sampleTreeList, bootstrap_cutoff_value=80, out
     buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree, quiet)
 
 # ./MethodsV2.py run_files/RAxML_bestTree.rcGTA_cat run_files/RAxML_bootstrap.orfg1.last_2 run_files/RAxML_bootstrap.orfg10.last_2 run_files/RAxML_bootstrap.orfg10_5.last_3 run_files/RAxML_bootstrap.orfg11.last_2 run_files/RAxML_bootstrap.orfg12.last_2 run_files/RAxML_bootstrap.orfg13.last_2 run_files/RAxML_bootstrap.orfg14.last_2 run_files/RAxML_bootstrap.orfg15.last_2 run_files/RAxML_bootstrap.orfg2.last_2 run_files/RAxML_bootstrap.orfg3.last_2 run_files/RAxML_bootstrap.orfg3_5.last_2 run_files/RAxML_bootstrap.orfg4.last_2 run_files/RAxML_bootstrap.orfg5.last_2 run_files/RAxML_bootstrap.orfg6.last_2 run_files/RAxML_bootstrap.orfg7.last_2 run_files/RAxML_bootstrap.orfg8.last_2 run_files/RAxML_bootstrap.orfg9.last_2 -v > run_output.txt
-# ./MethodsV2 run_files/RAxML_bestTree.rcGTA_cat run_files/RAxML_bootstrap.orfg1.last_2.subSample run_files/RAxML_bootstrap.orfg10.last_2.subSample run_files/RAxML_bootstrap.orfg10_5.last_3.subSample run_files/RAxML_bootstrap.orfg11.last_2.subSample run_files/RAxML_bootstrap.orfg12.last_2.subSample run_files/RAxML_bootstrap.orfg13.last_2.subSample run_files/RAxML_bootstrap.orfg14.last_2.subSample run_files/RAxML_bootstrap.orfg15.last_2.subSample run_files/RAxML_bootstrap.orfg2.last_2.subSample run_files/RAxML_bootstrap.orfg3.last_2.subSample run_files/RAxML_bootstrap.orfg3_5.last_2.subSample run_files/RAxML_bootstrap.orfg4.last_2.subSample run_files/RAxML_bootstrap.orfg5.last_2.subSample run_files/RAxML_bootstrap.orfg6.last_2.subSample run_files/RAxML_bootstrap.orfg7.last_2.subSample run_files/RAxML_bootstrap.orfg8.last_2.subSample run_files/RAxML_bootstrap.orfg9.last_2.subSample -v -c 8 > run_output.txt
-# ./MethodsV2.py test_trees/reference_tree.txt test_trees/highest_support.txt test_trees/highest_support.txt
+# ./MethodsV2.py run_files/RAxML_bestTree.rcGTA_cat run_files/RAxML_bootstrap.orfg1.last_2.subSample run_files/RAxML_bootstrap.orfg10.last_2.subSample run_files/RAxML_bootstrap.orfg10_5.last_3.subSample run_files/RAxML_bootstrap.orfg11.last_2.subSample run_files/RAxML_bootstrap.orfg12.last_2.subSample run_files/RAxML_bootstrap.orfg13.last_2.subSample run_files/RAxML_bootstrap.orfg14.last_2.subSample run_files/RAxML_bootstrap.orfg15.last_2.subSample run_files/RAxML_bootstrap.orfg2.last_2.subSample run_files/RAxML_bootstrap.orfg3.last_2.subSample run_files/RAxML_bootstrap.orfg3_5.last_2.subSample run_files/RAxML_bootstrap.orfg4.last_2.subSample run_files/RAxML_bootstrap.orfg5.last_2.subSample run_files/RAxML_bootstrap.orfg6.last_2.subSample run_files/RAxML_bootstrap.orfg7.last_2.subSample run_files/RAxML_bootstrap.orfg8.last_2.subSample run_files/RAxML_bootstrap.orfg9.last_2.subSample -v -c 8 > run_output.txt
 parser = argparse.ArgumentParser()
 parser.add_argument("reference_tree_file", metavar='<Reference Tree File>', help="The path of the reference tree file")
 parser.add_argument('bootstrap_gene_tree_files', metavar='<Bootstrap Tree Files>', nargs='+',
@@ -290,6 +311,6 @@ parser.add_argument("-c", "--cutoff", default=80, type=int,
 parser.add_argument("-o", "--output_file", default="output_tree.tre",
                     help="Output file for resulting tree with support. The default is 'output_tree.tre'")
 args = parser.parse_args()
-# runProgram(referenceTreeFile, sampleTreeList, bootstrap_cutoff_value=80, output_tree="output_tree.tre", verbose=False, quiet=False):
+
 runProgram(args.reference_tree_file, args.bootstrap_gene_tree_files,
            bootstrap_cutoff_value=args.cutoff, output_tree=args.output_file, verbose=args.verbose, quiet=args.quiet)

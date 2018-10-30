@@ -11,19 +11,21 @@ import sys
 
 # Input: list of files with trees (requires newick format)
 # Output: A list of Dendropy TreeList objects with all the bootstrap trees for a gene tree in each
-def readTrees(filenames, quiet=False):
+def readTrees(filenames, namespace, quiet=False):
     if not quiet:
         print()
         print("Reading in files...")
         print()
+
     sample_tree_list = []
     for f in filenames:
-        temp = TreeList()
+        temp = TreeList(taxon_namespace=namespace)
         try:
             temp.read(file=open(f, 'r'), schema="newick", preserve_underscores=True)
         except:
             print("Error with file '{}': please only use files with newick tree format".format(f))
             sys.exit()
+
         sample_tree_list.append(temp)
     return sample_tree_list
 
@@ -51,14 +53,34 @@ def getTreeQuartetSupport(tree, quartet_dictionary):
     taxon_label_list = [(n.taxon.label) for n in tree.leaf_nodes()]
     frozenset_of_taxa = frozenset(taxon_label_list)  # unique set of all taxa
 
+    # print()
+    # print('BIPARTITIONS')
+    # print([b.split_bitmask])
+    # print()
+
+
     for quartet in quartet_dictionary:
         if quartet.issubset(frozenset_of_taxa):  # if the tree contains the quartet
             sorted_quartet = list(quartet)
             sorted_quartet.sort()
 
+            tree.is_rooted = True
+            tree.encode_bipartitions()
+            bipartition_encoding = set(b.split_bitmask for b in tree.bipartition_encoding)
+
+            # HERE BITMASK SHIT LETS RIDE HEHEHE
+
+            print(tree)
+            print(tree.as_ascii_plot())
+            print(sorted_quartet)
+            print(bipartition_encoding)
+            print(tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[1]]))
+            print(tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[1]]) in bipartition_encoding)
+            print()
+            sys.exit()
+
             single_tree_list = TreeList()
-            single_tree_list.append(
-                tree.extract_tree_with_taxa_labels(quartet))
+            single_tree_list.append(tree.extract_tree_with_taxa_labels(quartet))
 
             # Check 1st Topology
             result0 = single_tree_list.frequency_of_bipartition(
@@ -115,7 +137,7 @@ def buildFullSupport(gene_tree_list, bootstrap_cutoff_value=80, verbose=False, q
             if quartet not in full_quartet_dictionary:
                 full_quartet_dictionary[quartet] = [0.0, 0.0, 0.0, 1.0]
             else:
-                full_quartet_dictionary[quartet][6] += 1.0
+                full_quartet_dictionary[quartet][3] += 1.0
             full_quartet_dictionary[quartet][0] += (
                 1.0 if quartet_dictionary[quartet][0] >= bootstrap_cutoff_value else 0.0)
             full_quartet_dictionary[quartet][1] += (
@@ -129,11 +151,11 @@ def buildFullSupport(gene_tree_list, bootstrap_cutoff_value=80, verbose=False, q
     for quartet in full_quartet_dictionary:
         # Normalize the support values
         full_quartet_dictionary[quartet][0] = full_quartet_dictionary[quartet][0] / \
-            full_quartet_dictionary[quartet][6]
+            full_quartet_dictionary[quartet][3]
         full_quartet_dictionary[quartet][1] = full_quartet_dictionary[quartet][1] / \
-            full_quartet_dictionary[quartet][6]
+            full_quartet_dictionary[quartet][3]
         full_quartet_dictionary[quartet][2] = full_quartet_dictionary[quartet][2] / \
-            full_quartet_dictionary[quartet][6]
+            full_quartet_dictionary[quartet][3]
 
         iq = 1.0
         for index in range(3):
@@ -142,7 +164,7 @@ def buildFullSupport(gene_tree_list, bootstrap_cutoff_value=80, verbose=False, q
                 iq += (full_quartet_dictionary[quartet][index] *
                        log(full_quartet_dictionary[quartet][index], 3))
 
-        full_quartet_dictionary[quartet][6] = iq
+        full_quartet_dictionary[quartet][3] = iq
 
     return full_quartet_dictionary
 
@@ -186,9 +208,9 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
                     for i in range(3):
                         if results[i] > 0:
                             max_val = max(quartet_dictionary_value[0], quartet_dictionary_value[1], quartet_dictionary_value[2])
-                            if max_val == quartet_dictionary_value[(i * 2) + 1] and max_val != 0:
+                            if max_val == quartet_dictionary_value[i] and max_val != 0:
                                 support_value = 1
-                    support_value *= quartet_dictionary_value[6]
+                    support_value *= quartet_dictionary_value[3]
                     total_support_value += support_value
         split_object['edge'].head_node.label = total_support_value / total_possibilities
     if not quiet:
@@ -248,7 +270,6 @@ def runProgram(referenceTreeFile, sampleTreeList, bootstrap_cutoff_value=80, out
         print("Sample Tree List: ", sampleTreeList)
         print("Bootstrap Cutoff Value: ", bootstrap_cutoff_value)
         print("Output Tree File: ", output_tree)
-    sample_tree_list = readTrees(sampleTreeList, quiet)
 
     try:
         reference_tree = Tree.get(path=referenceTreeFile, schema="newick", preserve_underscores=True)
@@ -257,6 +278,10 @@ def runProgram(referenceTreeFile, sampleTreeList, bootstrap_cutoff_value=80, out
         sys.exit()
 
     reference_tree_namespace = reference_tree.taxon_namespace
+
+    sample_tree_list = readTrees(sampleTreeList, reference_tree_namespace, quiet)
+
+
     # print(reference_tree_namespace.labels())
     # print()
 
@@ -276,6 +301,7 @@ def runProgram(referenceTreeFile, sampleTreeList, bootstrap_cutoff_value=80, out
         print()
     buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree, quiet)
 
+# ./MethodsV2.py test_trees/reference_tree.txt test_trees/highest_support.txt test_trees/highest_support.txt -v -c 8
 # ./MethodsV2.py run_files/RAxML_bestTree.rcGTA_cat run_files/RAxML_bootstrap.orfg1.last_2 run_files/RAxML_bootstrap.orfg10.last_2 run_files/RAxML_bootstrap.orfg10_5.last_3 run_files/RAxML_bootstrap.orfg11.last_2 run_files/RAxML_bootstrap.orfg12.last_2 run_files/RAxML_bootstrap.orfg13.last_2 run_files/RAxML_bootstrap.orfg14.last_2 run_files/RAxML_bootstrap.orfg15.last_2 run_files/RAxML_bootstrap.orfg2.last_2 run_files/RAxML_bootstrap.orfg3.last_2 run_files/RAxML_bootstrap.orfg3_5.last_2 run_files/RAxML_bootstrap.orfg4.last_2 run_files/RAxML_bootstrap.orfg5.last_2 run_files/RAxML_bootstrap.orfg6.last_2 run_files/RAxML_bootstrap.orfg7.last_2 run_files/RAxML_bootstrap.orfg8.last_2 run_files/RAxML_bootstrap.orfg9.last_2 -v > run_output.txt
 # ./MethodsV2.py run_files/RAxML_bestTree.rcGTA_cat run_files/RAxML_bootstrap.orfg1.last_2.subSample run_files/RAxML_bootstrap.orfg10.last_2.subSample run_files/RAxML_bootstrap.orfg10_5.last_3.subSample run_files/RAxML_bootstrap.orfg11.last_2.subSample run_files/RAxML_bootstrap.orfg12.last_2.subSample run_files/RAxML_bootstrap.orfg13.last_2.subSample run_files/RAxML_bootstrap.orfg14.last_2.subSample run_files/RAxML_bootstrap.orfg15.last_2.subSample run_files/RAxML_bootstrap.orfg2.last_2.subSample run_files/RAxML_bootstrap.orfg3.last_2.subSample run_files/RAxML_bootstrap.orfg3_5.last_2.subSample run_files/RAxML_bootstrap.orfg4.last_2.subSample run_files/RAxML_bootstrap.orfg5.last_2.subSample run_files/RAxML_bootstrap.orfg6.last_2.subSample run_files/RAxML_bootstrap.orfg7.last_2.subSample run_files/RAxML_bootstrap.orfg8.last_2.subSample run_files/RAxML_bootstrap.orfg9.last_2.subSample -v -c 8 > run_output.txt
 parser = argparse.ArgumentParser()

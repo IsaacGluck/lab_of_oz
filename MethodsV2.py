@@ -40,15 +40,7 @@ def makeQuartetDictionary(tree_list):
         sorted_list_of_leaves = list(tuple_of_leaves)
         sorted_list_of_leaves.sort()
         frozenset_of_leaves = frozenset(sorted_list_of_leaves)
-        topology1 = "(({0},{1}),({2},{3}));".format(
-            sorted_list_of_leaves[0], sorted_list_of_leaves[1], sorted_list_of_leaves[2], sorted_list_of_leaves[3])
-        topology2 = "(({0},{1}),({2},{3}));".format(
-            sorted_list_of_leaves[0], sorted_list_of_leaves[2], sorted_list_of_leaves[1], sorted_list_of_leaves[3])
-        topology3 = "(({0},{1}),({2},{3}));".format(
-            sorted_list_of_leaves[0], sorted_list_of_leaves[3], sorted_list_of_leaves[1], sorted_list_of_leaves[2])
-        dictonary_of_quartets[frozenset_of_leaves] = [Tree.get(data=topology1, taxon_namespace=tree_list.taxon_namespace, schema="newick", preserve_underscores=True), 0,
-                                                      Tree.get(data=topology2, taxon_namespace=tree_list.taxon_namespace, schema="newick", preserve_underscores=True), 0,
-                                                      Tree.get(data=topology3, taxon_namespace=tree_list.taxon_namespace, schema="newick", preserve_underscores=True), 0]
+        dictonary_of_quartets[frozenset_of_leaves] = [0, 0, 0]
 
     return dictonary_of_quartets
 
@@ -68,39 +60,32 @@ def getTreeQuartetSupport(tree, quartet_dictionary):
             single_tree_list.append(
                 tree.extract_tree_with_taxa_labels(quartet))
 
-            # print(sorted_quartet, single_tree_list.frequency_of_bipartition(labels=[sorted_quartet[x], sorted_quartet[1]]),
-            #                       single_tree_list.frequency_of_bipartition(labels=[sorted_quartet[0], sorted_quartet[2]]),
-            #                       single_tree_list.frequency_of_bipartition(labels=[sorted_quartet[0], sorted_quartet[3]]))
-
             # Check 1st Topology
             result0 = single_tree_list.frequency_of_bipartition(
                 labels=[sorted_quartet[0], sorted_quartet[1]]) + single_tree_list.frequency_of_bipartition(labels=[sorted_quartet[2], sorted_quartet[3]])
             # print(result0)
             if (result0 > 0):
-                quartet_dictionary[quartet][1] = quartet_dictionary[quartet][1] + 1
+                quartet_dictionary[quartet][0] = quartet_dictionary[quartet][0] + 1
                 continue
 
             # Check 2nd Topology
             result1 = single_tree_list.frequency_of_bipartition(
                 labels=[sorted_quartet[0], sorted_quartet[2]]) + single_tree_list.frequency_of_bipartition(labels=[sorted_quartet[1], sorted_quartet[3]])
             if (result1 > 0):
-                quartet_dictionary[quartet][3] = quartet_dictionary[quartet][3] + 1
+                quartet_dictionary[quartet][1] = quartet_dictionary[quartet][1] + 1
                 continue
 
             # Check 3rd Topology
             result2 = single_tree_list.frequency_of_bipartition(
                 labels=[sorted_quartet[0], sorted_quartet[3]]) + single_tree_list.frequency_of_bipartition(labels=[sorted_quartet[1], sorted_quartet[2]])
             if (result2 > 0):
-                quartet_dictionary[quartet][5] = quartet_dictionary[quartet][5] + 1
+                quartet_dictionary[quartet][2] = quartet_dictionary[quartet][2] + 1
                 continue
 
             # ERROR
-            # print(single_tree_list.frequency_of_bipartition(labels=[sorted_quartet[0], sorted_quartet[1]]) + single_tree_list.frequency_of_bipartition(labels=[sorted_quartet[2], sorted_quartet[3]]))
             print("Error: Topology is not a match")
             print()
             print("Sorted quartet:", sorted_quartet)
-            print("\n")
-            print(single_tree_list[0].as_ascii_plot())
             quit()
 
     return quartet_dictionary
@@ -128,37 +113,30 @@ def buildFullSupport(gene_tree_list, bootstrap_cutoff_value=80, verbose=False, q
         # Use index 6 of the list to record how many times the quartet is seen
         for quartet in quartet_dictionary:
             if quartet not in full_quartet_dictionary:
-                full_quartet_dictionary[quartet] = [quartet_dictionary[quartet][0], 0.0,
-                    quartet_dictionary[quartet][2], 0.0, quartet_dictionary[quartet][4], 0.0, 1.0]
+                full_quartet_dictionary[quartet] = [0.0, 0.0, 0.0, 1.0]
             else:
                 full_quartet_dictionary[quartet][6] += 1.0
+            full_quartet_dictionary[quartet][0] += (
+                1.0 if quartet_dictionary[quartet][0] >= bootstrap_cutoff_value else 0.0)
             full_quartet_dictionary[quartet][1] += (
                 1.0 if quartet_dictionary[quartet][1] >= bootstrap_cutoff_value else 0.0)
-            full_quartet_dictionary[quartet][3] += (
-                1.0 if quartet_dictionary[quartet][3] >= bootstrap_cutoff_value else 0.0)
-            full_quartet_dictionary[quartet][5] += (
-                1.0 if quartet_dictionary[quartet][5] >= bootstrap_cutoff_value else 0.0)
-
-    # Probably don't need
-    # print("Full quartet dictionary with support values MIDDLE")
-    # [print(quartet, full_quartet_dictionary[quartet])
-    #        for quartet in full_quartet_dictionary]
-    # print()
+            full_quartet_dictionary[quartet][2] += (
+                1.0 if quartet_dictionary[quartet][2] >= bootstrap_cutoff_value else 0.0)
 
     # full_quartet_dictionary now has all the support vectors, s(t)
     # Next we must normalize the support vectors: p(t) = s(ti)/(s(t1) + s(t2) + s(t3))
     # Also generate the IQ value
     for quartet in full_quartet_dictionary:
         # Normalize the support values
+        full_quartet_dictionary[quartet][0] = full_quartet_dictionary[quartet][0] / \
+            full_quartet_dictionary[quartet][6]
         full_quartet_dictionary[quartet][1] = full_quartet_dictionary[quartet][1] / \
             full_quartet_dictionary[quartet][6]
-        full_quartet_dictionary[quartet][3] = full_quartet_dictionary[quartet][3] / \
-            full_quartet_dictionary[quartet][6]
-        full_quartet_dictionary[quartet][5] = full_quartet_dictionary[quartet][5] / \
+        full_quartet_dictionary[quartet][2] = full_quartet_dictionary[quartet][2] / \
             full_quartet_dictionary[quartet][6]
 
         iq = 1.0
-        for index in [1, 3, 5]:
+        for index in range(3):
             if full_quartet_dictionary[quartet][index] > 0:
                 # P(ti) * log base 3 of P(ti)
                 iq += (full_quartet_dictionary[quartet][index] *
@@ -207,7 +185,7 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
                     results = [result0, result1, result2]
                     for i in range(3):
                         if results[i] > 0:
-                            max_val = max(quartet_dictionary_value[1], quartet_dictionary_value[3], quartet_dictionary_value[5])
+                            max_val = max(quartet_dictionary_value[0], quartet_dictionary_value[1], quartet_dictionary_value[2])
                             if max_val == quartet_dictionary_value[(i * 2) + 1] and max_val != 0:
                                 support_value = 1
                     support_value *= quartet_dictionary_value[6]

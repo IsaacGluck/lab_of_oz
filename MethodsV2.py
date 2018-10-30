@@ -47,9 +47,8 @@ def makeQuartetDictionary(tree_list):
         topology3 = "(({0},{1}),({2},{3}));".format(
             sorted_list_of_leaves[0], sorted_list_of_leaves[3], sorted_list_of_leaves[1], sorted_list_of_leaves[2])
         dictonary_of_quartets[frozenset_of_leaves] = [Tree.get(data=topology1, taxon_namespace=tree_list.taxon_namespace, schema="newick", preserve_underscores=True), 0,
-                                                  Tree.get(
-                                                      data=topology2, taxon_namespace=tree_list.taxon_namespace, schema="newick", preserve_underscores=True), 0,
-                                                  Tree.get(data=topology3, taxon_namespace=tree_list.taxon_namespace, schema="newick", preserve_underscores=True), 0]
+                                                      Tree.get(data=topology2, taxon_namespace=tree_list.taxon_namespace, schema="newick", preserve_underscores=True), 0,
+                                                      Tree.get(data=topology3, taxon_namespace=tree_list.taxon_namespace, schema="newick", preserve_underscores=True), 0]
 
     return dictonary_of_quartets
 

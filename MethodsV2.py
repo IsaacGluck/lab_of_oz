@@ -70,37 +70,43 @@ def getTreeQuartetSupport(tree, quartet_dictionary):
 
             # HERE BITMASK SHIT LETS RIDE HEHEHE
 
-            print(tree)
-            print(tree.as_ascii_plot())
-            print(sorted_quartet)
-            print(bipartition_encoding)
-            print(tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[1]]))
-            print(tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[1]]) in bipartition_encoding)
-            print()
-            sys.exit()
+            # print(tree)
+            # print(tree.as_ascii_plot())
+            # print(sorted_quartet)
+            # print(bipartition_encoding)
+            # print(tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[2]]))
+            # print(tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[2]]) in bipartition_encoding)
+            # print()
+            # sys.exit()
 
-            single_tree_list = TreeList()
-            single_tree_list.append(tree.extract_tree_with_taxa_labels(quartet))
+            # single_tree_list = TreeList()
+            # single_tree_list.append(tree.extract_tree_with_taxa_labels(quartet))
 
             # Check 1st Topology
-            result0 = single_tree_list.frequency_of_bipartition(
-                labels=[sorted_quartet[0], sorted_quartet[1]]) + single_tree_list.frequency_of_bipartition(labels=[sorted_quartet[2], sorted_quartet[3]])
+            # result0 = single_tree_list.frequency_of_bipartition(
+            #     labels=[sorted_quartet[0], sorted_quartet[1]]) + single_tree_list.frequency_of_bipartition(labels=[sorted_quartet[2], sorted_quartet[3]])
+            result0 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[1]]) in bipartition_encoding) or
+                      (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[2], sorted_quartet[3]]) in bipartition_encoding))
             # print(result0)
-            if (result0 > 0):
+            if (result0):
                 quartet_dictionary[quartet][0] = quartet_dictionary[quartet][0] + 1
                 continue
 
             # Check 2nd Topology
-            result1 = single_tree_list.frequency_of_bipartition(
-                labels=[sorted_quartet[0], sorted_quartet[2]]) + single_tree_list.frequency_of_bipartition(labels=[sorted_quartet[1], sorted_quartet[3]])
-            if (result1 > 0):
+            # result1 = single_tree_list.frequency_of_bipartition(
+            #     labels=[sorted_quartet[0], sorted_quartet[2]]) + single_tree_list.frequency_of_bipartition(labels=[sorted_quartet[1], sorted_quartet[3]])
+            result1 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[2]]) in bipartition_encoding) or
+                      (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[3]]) in bipartition_encoding))
+            if (result1):
                 quartet_dictionary[quartet][1] = quartet_dictionary[quartet][1] + 1
                 continue
 
             # Check 3rd Topology
-            result2 = single_tree_list.frequency_of_bipartition(
-                labels=[sorted_quartet[0], sorted_quartet[3]]) + single_tree_list.frequency_of_bipartition(labels=[sorted_quartet[1], sorted_quartet[2]])
-            if (result2 > 0):
+            # result2 = single_tree_list.frequency_of_bipartition(
+            #     labels=[sorted_quartet[0], sorted_quartet[3]]) + single_tree_list.frequency_of_bipartition(labels=[sorted_quartet[1], sorted_quartet[2]])
+            result2 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[3]]) in bipartition_encoding) or
+                      (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[2]]) in bipartition_encoding))
+            if (result2):
                 quartet_dictionary[quartet][2] = quartet_dictionary[quartet][2] + 1
                 continue
 

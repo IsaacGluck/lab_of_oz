@@ -19,7 +19,8 @@ def readTrees(filenames, namespace, quiet=False):
 
     sample_tree_list = []
     for f in filenames:
-        temp = TreeList(taxon_namespace=namespace)
+        # temp = TreeList(taxon_namespace=namespace)
+        temp = TreeList()
         try:
             temp.read(file=open(f, 'r'), schema="newick", preserve_underscores=True)
         except:
@@ -53,71 +54,149 @@ def getTreeQuartetSupport(tree, quartet_dictionary):
     taxon_label_list = [(n.taxon.label) for n in tree.leaf_nodes()]
     frozenset_of_taxa = frozenset(taxon_label_list)  # unique set of all taxa
 
-    # print()
-    # print('BIPARTITIONS')
-    # print([b.split_bitmask])
-    # print()
+    tree.is_rooted = True
+    # middle_node = tree.seed_node.adjacent_nodes()[1]
+    # tree.reroot_at_node(middle_node, update_bipartitions=True)
 
+    tree.update_bipartitions()
+    bipartition_encoding = set(b.split_bitmask for b in tree.bipartition_encoding)
 
     for quartet in quartet_dictionary:
         if quartet.issubset(frozenset_of_taxa):  # if the tree contains the quartet
-            sorted_quartet = list(quartet)
-            sorted_quartet.sort()
+            try:
+                quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartition_encoding)
+            # quartetExtractionSupportHelper(tree, quartet_dictionary, quartet)
+            except:
+                quartetExtractionSupportHelper(tree, quartet_dictionary, quartet)
+                # middle_node = tree.seed_node.adjacent_nodes()[1]
+                # tree.reroot_at_node(middle_node, update_bipartitions=True)
+                # extracted_tree = tree.extract_tree_with_taxa_labels(quartet)
+                # quartetBipartitionSupportHelper(extracted_tree, quartet_dictionary, quartet, set(b.split_bitmask for b in extracted_tree.encode_bipartitions()))
 
-            tree.is_rooted = True
-            tree.encode_bipartitions()
-            bipartition_encoding = set(b.split_bitmask for b in tree.bipartition_encoding)
-
-            # HERE BITMASK SHIT LETS RIDE HEHEHE
-
-            # print(tree)
-            # print(tree.as_ascii_plot())
-            # print(sorted_quartet)
-            # print(bipartition_encoding)
-            # print(tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[2]]))
-            # print(tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[2]]) in bipartition_encoding)
-            # print()
-            # sys.exit()
-
-            # single_tree_list = TreeList()
-            # single_tree_list.append(tree.extract_tree_with_taxa_labels(quartet))
-
-            # Check 1st Topology
-            # result0 = single_tree_list.frequency_of_bipartition(
-            #     labels=[sorted_quartet[0], sorted_quartet[1]]) + single_tree_list.frequency_of_bipartition(labels=[sorted_quartet[2], sorted_quartet[3]])
-            result0 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[1]]) in bipartition_encoding) or
-                      (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[2], sorted_quartet[3]]) in bipartition_encoding))
-            # print(result0)
-            if (result0):
-                quartet_dictionary[quartet][0] = quartet_dictionary[quartet][0] + 1
-                continue
-
-            # Check 2nd Topology
-            # result1 = single_tree_list.frequency_of_bipartition(
-            #     labels=[sorted_quartet[0], sorted_quartet[2]]) + single_tree_list.frequency_of_bipartition(labels=[sorted_quartet[1], sorted_quartet[3]])
-            result1 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[2]]) in bipartition_encoding) or
-                      (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[3]]) in bipartition_encoding))
-            if (result1):
-                quartet_dictionary[quartet][1] = quartet_dictionary[quartet][1] + 1
-                continue
-
-            # Check 3rd Topology
-            # result2 = single_tree_list.frequency_of_bipartition(
-            #     labels=[sorted_quartet[0], sorted_quartet[3]]) + single_tree_list.frequency_of_bipartition(labels=[sorted_quartet[1], sorted_quartet[2]])
-            result2 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[3]]) in bipartition_encoding) or
-                      (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[2]]) in bipartition_encoding))
-            if (result2):
-                quartet_dictionary[quartet][2] = quartet_dictionary[quartet][2] + 1
-                continue
-
-            # ERROR
-            print("Error: Topology is not a match")
-            print()
-            print("Sorted quartet:", sorted_quartet)
-            quit()
 
     return quartet_dictionary
 
+def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartition_encoding):
+    sorted_quartet = list(quartet)
+    sorted_quartet.sort()
+
+    result0 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[1]]) in bipartition_encoding) or
+              (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[2], sorted_quartet[3]]) in bipartition_encoding))
+    if (result0):
+        quartet_dictionary[quartet][0] = quartet_dictionary[quartet][0] + 1
+        return
+
+    # Check 2nd Topology
+    result1 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[2]]) in bipartition_encoding) or
+              (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[3]]) in bipartition_encoding))
+    if (result1):
+        quartet_dictionary[quartet][1] = quartet_dictionary[quartet][1] + 1
+        return
+
+    # Check 3rd Topology
+    result2 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[3]]) in bipartition_encoding) or
+              (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[2]]) in bipartition_encoding))
+    if (result2):
+        quartet_dictionary[quartet][2] = quartet_dictionary[quartet][2] + 1
+        return
+
+
+    middle_node = tree.seed_node.adjacent_nodes()[2]
+    tree.reroot_at_node(middle_node, update_bipartitions=True)
+    bipartition_encoding = set(b.split_bitmask for b in tree.bipartition_encoding)
+
+    result0 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[1]]) in bipartition_encoding) or
+              (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[2], sorted_quartet[3]]) in bipartition_encoding))
+    if (result0):
+        quartet_dictionary[quartet][0] = quartet_dictionary[quartet][0] + 1
+        return
+
+    # Check 2nd Topology
+    result1 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[2]]) in bipartition_encoding) or
+              (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[3]]) in bipartition_encoding))
+    if (result1):
+        quartet_dictionary[quartet][1] = quartet_dictionary[quartet][1] + 1
+        return
+
+    # Check 3rd Topology
+    result2 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[3]]) in bipartition_encoding) or
+              (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[2]]) in bipartition_encoding))
+    if (result2):
+        quartet_dictionary[quartet][2] = quartet_dictionary[quartet][2] + 1
+        return
+
+    # ERROR
+    print("-----ERROR OUTPUT BIPARTITION-----")
+    print("Sorted quartet:", sorted_quartet)
+    print()
+    print(tree.as_string('newick'))
+    print()
+    print(tree.as_ascii_plot())
+    print()
+    # print(set(b.leafset_as_newick_string(tree.taxon_namespace) for b in tree.bipartition_encoding))
+    print()
+    # print(tree.seed_node.adjacent_nodes())
+    # print(tree.seed_node.edge.head_node)
+    # print(tree.seed_node.edge.rootedge)
+    # middle_node = tree.seed_node.adjacent_nodes()[1]
+    # tree.reroot_at_node(middle_node)
+    # bipartition_encoding = set(b.split_bitmask for b in tree.bipartition_encoding)
+    # # tree.update_bipartitions(suppress_unifurcations=False)
+    # print(tree.as_string('newick'))
+    # print(tree.as_ascii_plot())
+    # print(set(b.leafset_as_newick_string(tree.taxon_namespace) for b in tree.bipartition_encoding))
+    # print()
+    # print([b for b in bipartition_encoding])
+    # print()
+    # print(tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[2], sorted_quartet[1]]))
+    # print(tree.extract_tree_with_taxa_labels(quartet).as_ascii_plot())
+    raise Exception('Error: Topology is not a match')
+
+
+def quartetExtractionSupportHelper(tree, quartet_dictionary, quartet):
+    sorted_quartet = list(quartet)
+    sorted_quartet.sort()
+
+    # single_tree_list = TreeList()
+    # single_tree_list.append(tree.extract_tree_with_taxa_labels(quartet))
+    extracted_tree = tree.extract_tree_with_taxa_labels(quartet)
+    extracted_tree.encode_bipartitions()
+    bipartition_encoding = set(b.split_bitmask for b in extracted_tree.bipartition_encoding)
+
+    # Check 1st Topology
+    result0 = ((extracted_tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[1]]) in bipartition_encoding) or
+              (extracted_tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[2], sorted_quartet[3]]) in bipartition_encoding))
+    if (result0):
+        quartet_dictionary[quartet][0] = quartet_dictionary[quartet][0] + 1
+        return
+
+    # Check 2nd Topology
+    result1 = ((extracted_tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[2]]) in bipartition_encoding) or
+              (extracted_tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[3]]) in bipartition_encoding))
+    if (result1):
+        quartet_dictionary[quartet][1] = quartet_dictionary[quartet][1] + 1
+        return
+
+    # Check 3rd Topology
+    result2 = ((extracted_tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[3]]) in bipartition_encoding) or
+              (extracted_tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[2]]) in bipartition_encoding))
+    if (result2):
+        quartet_dictionary[quartet][2] = quartet_dictionary[quartet][2] + 1
+        return
+
+    # ERROR
+    print("-----ERROR OUTPUT EXTRACTION-----")
+    # print("Sorted quartet:", sorted_quartet)
+    # print()
+    print(extracted_tree.as_string('newick'))
+    print()
+    print(extracted_tree.as_ascii_plot())
+    # print()
+    # print(bipartition_encoding)
+    # print()
+    # print(extracted_tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[3]]))
+    # print()
+    raise Exception('Error: Topology is not a match')
 
 # Input: An array of Dendropy TreeLists, a bootstrap cutoff value defaulting to 80
 # Output: The full quartet dictionary for all gene trees containing P(t) and IC values
@@ -222,8 +301,6 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
     if not quiet:
         print(reference_tree.as_string(schema="newick", suppress_internal_node_labels=False))
     reference_tree.write(path=output_tree, schema="newick", suppress_internal_node_labels=False)
-    # for node in reference_tree:
-    #     print(node.taxon, node.label)
 
 
 def getListOfSplits(taxonNamespace, tree):
@@ -293,7 +370,6 @@ def runProgram(referenceTreeFile, sampleTreeList, bootstrap_cutoff_value=80, out
 
     # Check if gene tree taxon namespace matches reference tree
     for s in sample_tree_list:
-        # print(s.taxon_namespace.labels())
         if not reference_tree_namespace.has_taxa_labels(s.taxon_namespace.labels()):
             print('Error: reference tree is of a different taxon namespace as the sample trees')
             return
@@ -307,7 +383,10 @@ def runProgram(referenceTreeFile, sampleTreeList, bootstrap_cutoff_value=80, out
         print()
     buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree, quiet)
 
+
+# ./MethodsV2.py test_trees/reference_tree.txt test_trees/trifurcations.txt -v -c 8
 # ./MethodsV2.py test_trees/reference_tree.txt test_trees/highest_support.txt test_trees/highest_support.txt -v -c 8
+# ./MethodsV2.py run_files/RAxML_bestTree.rcGTA_cat run_files/RAxML_bootstrap.orfg1.last_2 -v -c 8
 # ./MethodsV2.py run_files/RAxML_bestTree.rcGTA_cat run_files/RAxML_bootstrap.orfg1.last_2 run_files/RAxML_bootstrap.orfg10.last_2 run_files/RAxML_bootstrap.orfg10_5.last_3 run_files/RAxML_bootstrap.orfg11.last_2 run_files/RAxML_bootstrap.orfg12.last_2 run_files/RAxML_bootstrap.orfg13.last_2 run_files/RAxML_bootstrap.orfg14.last_2 run_files/RAxML_bootstrap.orfg15.last_2 run_files/RAxML_bootstrap.orfg2.last_2 run_files/RAxML_bootstrap.orfg3.last_2 run_files/RAxML_bootstrap.orfg3_5.last_2 run_files/RAxML_bootstrap.orfg4.last_2 run_files/RAxML_bootstrap.orfg5.last_2 run_files/RAxML_bootstrap.orfg6.last_2 run_files/RAxML_bootstrap.orfg7.last_2 run_files/RAxML_bootstrap.orfg8.last_2 run_files/RAxML_bootstrap.orfg9.last_2 -v > run_output.txt
 # ./MethodsV2.py run_files/RAxML_bestTree.rcGTA_cat run_files/RAxML_bootstrap.orfg1.last_2.subSample run_files/RAxML_bootstrap.orfg10.last_2.subSample run_files/RAxML_bootstrap.orfg10_5.last_3.subSample run_files/RAxML_bootstrap.orfg11.last_2.subSample run_files/RAxML_bootstrap.orfg12.last_2.subSample run_files/RAxML_bootstrap.orfg13.last_2.subSample run_files/RAxML_bootstrap.orfg14.last_2.subSample run_files/RAxML_bootstrap.orfg15.last_2.subSample run_files/RAxML_bootstrap.orfg2.last_2.subSample run_files/RAxML_bootstrap.orfg3.last_2.subSample run_files/RAxML_bootstrap.orfg3_5.last_2.subSample run_files/RAxML_bootstrap.orfg4.last_2.subSample run_files/RAxML_bootstrap.orfg5.last_2.subSample run_files/RAxML_bootstrap.orfg6.last_2.subSample run_files/RAxML_bootstrap.orfg7.last_2.subSample run_files/RAxML_bootstrap.orfg8.last_2.subSample run_files/RAxML_bootstrap.orfg9.last_2.subSample -v -c 8 > run_output.txt
 parser = argparse.ArgumentParser()

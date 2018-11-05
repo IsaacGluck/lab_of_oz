@@ -7,6 +7,15 @@ from pprint import pprint
 import json
 import argparse
 import sys
+import time
+
+
+# STATS
+# reference tree has 95 taxa
+# smallest gene tree has 15, takes ~1min alone
+# orfg10 has 54, takes ~30 minutes for 10 bootstrap samples
+# ~3 million quartets in reference tree (about same in full quartet dictionary)
+# ~12 million quartets embedded in branches
 
 
 # Input: list of files with trees (requires newick format)
@@ -47,7 +56,6 @@ def makeQuartetDictionary(tree_list):
 
     return dictonary_of_quartets
 
-
 # Input: Dendropy Tree object, a quartet dictionary as created by makeQuartetDictionary()
 # Output: A new quartet dictionary with updated support vectors for that tree
 def getTreeQuartetSupport(tree, quartet_dictionary):
@@ -55,75 +63,60 @@ def getTreeQuartetSupport(tree, quartet_dictionary):
     frozenset_of_taxa = frozenset(taxon_label_list)  # unique set of all taxa
 
     tree.is_rooted = True
-    # middle_node = tree.seed_node.adjacent_nodes()[1]
-    # tree.reroot_at_node(middle_node, update_bipartitions=True)
-
     tree.update_bipartitions()
     bipartition_encoding = set(b.split_bitmask for b in tree.bipartition_encoding)
 
+    extraction_needed = 0
+    counter = 0
     for quartet in quartet_dictionary:
+        counter += 1
+        # sys.stdout.write("%d" % counter)
         if quartet.issubset(frozenset_of_taxa):  # if the tree contains the quartet
+            p = round((counter / len(quartet_dictionary)) * 100, 2)
+            e = round(extraction_needed/len(quartet_dictionary) * 100, 2)
+            sys.stdout.write("Tree support progress: %f%% \t Extractions Needed: %f%%   \r" % (p, e) )
+            sys.stdout.flush()
             try:
                 quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartition_encoding)
-            # quartetExtractionSupportHelper(tree, quartet_dictionary, quartet)
             except:
-                quartetExtractionSupportHelper(tree, quartet_dictionary, quartet)
-                # middle_node = tree.seed_node.adjacent_nodes()[1]
-                # tree.reroot_at_node(middle_node, update_bipartitions=True)
-                # extracted_tree = tree.extract_tree_with_taxa_labels(quartet)
-                # quartetBipartitionSupportHelper(extracted_tree, quartet_dictionary, quartet, set(b.split_bitmask for b in extracted_tree.encode_bipartitions()))
-
-
+                extraction_needed += 1
+                # print('EXTRACTION NEEDED')
+                sys.exit()
+                quartetExtractionSupportHelper(tree, quartet_dictionary, quartet) # SAVES OVER A SECOND!
+    # print("Number of extractions needed ", extraction_needed)
     return quartet_dictionary
 
 def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartition_encoding):
+    labelList = [(n.taxon.label) for n in tree.leaf_nodes()]
     sorted_quartet = list(quartet)
     sorted_quartet.sort()
 
     result0 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[1]]) in bipartition_encoding) or
-              (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[2], sorted_quartet[3]]) in bipartition_encoding))
+              (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[2], sorted_quartet[3]]) in bipartition_encoding) or
+              manualBitmaskSearch(sorted_quartet[0], sorted_quartet[1], labelList, tree.bipartition_encoding) or
+              manualBitmaskSearch(sorted_quartet[2], sorted_quartet[3], labelList, tree.bipartition_encoding))
     if (result0):
         quartet_dictionary[quartet][0] = quartet_dictionary[quartet][0] + 1
         return
 
     # Check 2nd Topology
     result1 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[2]]) in bipartition_encoding) or
-              (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[3]]) in bipartition_encoding))
+              (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[3]]) in bipartition_encoding) or
+              manualBitmaskSearch(sorted_quartet[0], sorted_quartet[2], labelList, tree.bipartition_encoding) or
+              manualBitmaskSearch(sorted_quartet[1], sorted_quartet[3], labelList, tree.bipartition_encoding))
     if (result1):
         quartet_dictionary[quartet][1] = quartet_dictionary[quartet][1] + 1
         return
 
     # Check 3rd Topology
     result2 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[3]]) in bipartition_encoding) or
-              (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[2]]) in bipartition_encoding))
+              (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[2]]) in bipartition_encoding) or
+              manualBitmaskSearch(sorted_quartet[0], sorted_quartet[3], labelList, tree.bipartition_encoding) or
+              manualBitmaskSearch(sorted_quartet[1], sorted_quartet[2], labelList, tree.bipartition_encoding))
     if (result2):
         quartet_dictionary[quartet][2] = quartet_dictionary[quartet][2] + 1
         return
 
-
-    middle_node = tree.seed_node.adjacent_nodes()[2]
-    tree.reroot_at_node(middle_node, update_bipartitions=True)
-    bipartition_encoding = set(b.split_bitmask for b in tree.bipartition_encoding)
-
-    result0 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[1]]) in bipartition_encoding) or
-              (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[2], sorted_quartet[3]]) in bipartition_encoding))
-    if (result0):
-        quartet_dictionary[quartet][0] = quartet_dictionary[quartet][0] + 1
-        return
-
-    # Check 2nd Topology
-    result1 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[2]]) in bipartition_encoding) or
-              (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[3]]) in bipartition_encoding))
-    if (result1):
-        quartet_dictionary[quartet][1] = quartet_dictionary[quartet][1] + 1
-        return
-
-    # Check 3rd Topology
-    result2 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[3]]) in bipartition_encoding) or
-              (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[2]]) in bipartition_encoding))
-    if (result2):
-        quartet_dictionary[quartet][2] = quartet_dictionary[quartet][2] + 1
-        return
 
     # ERROR
     print("-----ERROR OUTPUT BIPARTITION-----")
@@ -133,8 +126,10 @@ def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartiti
     print()
     print(tree.as_ascii_plot())
     print()
-    # print(set(b.leafset_as_newick_string(tree.taxon_namespace) for b in tree.bipartition_encoding))
-    print()
+    print(set(b.leafset_as_newick_string(tree.taxon_namespace) for b in tree.bipartition_encoding))
+    print(set(b.split_as_bitstring() for b in tree.bipartition_encoding))
+    print(set(b.leafset_taxa(tree.taxon_namespace) for b in tree.bipartition_encoding))
+    print([(n.taxon.label) for n in tree.leaf_nodes()])
     # print(tree.seed_node.adjacent_nodes())
     # print(tree.seed_node.edge.head_node)
     # print(tree.seed_node.edge.rootedge)
@@ -148,10 +143,22 @@ def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartiti
     # print()
     # print([b for b in bipartition_encoding])
     # print()
-    # print(tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[2], sorted_quartet[1]]))
+    # print(tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[2]]))
+    # print(manualBitmaskSearch(sorted_quartet[2], sorted_quartet[0], [(n.taxon.label) for n in tree.leaf_nodes()], tree.bipartition_encoding))
     # print(tree.extract_tree_with_taxa_labels(quartet).as_ascii_plot())
     raise Exception('Error: Topology is not a match')
 
+def manualBitmaskSearch(taxonLabel1, taxonLabel2, labelList, bipartition_encoding):
+    return False
+    for b in bipartition_encoding:
+        bString = b.split_as_bitstring()
+        zeros = 0
+        for i in bString:
+            if i is '0':
+                zeros += 1
+        if bString[labelList.index(taxonLabel1)] is bString[labelList.index(taxonLabel2)] and zeros is 2:
+            return True
+    return False
 
 def quartetExtractionSupportHelper(tree, quartet_dictionary, quartet):
     sorted_quartet = list(quartet)
@@ -185,18 +192,19 @@ def quartetExtractionSupportHelper(tree, quartet_dictionary, quartet):
         return
 
     # ERROR
-    print("-----ERROR OUTPUT EXTRACTION-----")
+    # print("-----ERROR OUTPUT EXTRACTION-----")
     # print("Sorted quartet:", sorted_quartet)
     # print()
-    print(extracted_tree.as_string('newick'))
-    print()
-    print(extracted_tree.as_ascii_plot())
+    # print(extracted_tree.as_string('newick'))
+    # print()
+    # print(extracted_tree.as_ascii_plot())
     # print()
     # print(bipartition_encoding)
     # print()
     # print(extracted_tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[3]]))
     # print()
     raise Exception('Error: Topology is not a match')
+
 
 # Input: An array of Dendropy TreeLists, a bootstrap cutoff value defaulting to 80
 # Output: The full quartet dictionary for all gene trees containing P(t) and IC values
@@ -206,10 +214,17 @@ def buildFullSupport(gene_tree_list, bootstrap_cutoff_value=80, verbose=False, q
         print()
     full_quartet_dictionary = {}
 
+    start = time.perf_counter()
+    print('START: ', start)
+
     for bootstrap_tree_list in gene_tree_list:
         quartet_dictionary = makeQuartetDictionary(bootstrap_tree_list)
+        print('MADE QUARTET DICTIONARY: ', (time.perf_counter() - start), '\t\t\tquartet_dictionary SIZE: ', len(quartet_dictionary))
+
         for tree in bootstrap_tree_list:
             getTreeQuartetSupport(tree, quartet_dictionary)
+            print()
+        print('GOT FULL SUPPORT: ', (time.perf_counter() - start))
 
         if verbose:
             print("Full quartet dictionary:")
@@ -229,6 +244,7 @@ def buildFullSupport(gene_tree_list, bootstrap_cutoff_value=80, verbose=False, q
                 1.0 if quartet_dictionary[quartet][1] >= bootstrap_cutoff_value else 0.0)
             full_quartet_dictionary[quartet][2] += (
                 1.0 if quartet_dictionary[quartet][2] >= bootstrap_cutoff_value else 0.0)
+        print('CONVERTED SUPPORT ABOVE CUTOFF TO 1: ', (time.perf_counter() - start), '\t\t\tfull_quartet_dictionary SIZE: ', len(full_quartet_dictionary))
 
     # full_quartet_dictionary now has all the support vectors, s(t)
     # Next we must normalize the support vectors: p(t) = s(ti)/(s(t1) + s(t2) + s(t3))
@@ -251,22 +267,42 @@ def buildFullSupport(gene_tree_list, bootstrap_cutoff_value=80, verbose=False, q
 
         full_quartet_dictionary[quartet][3] = iq
 
+    print('IC VALUES COMPUTED: ', (time.perf_counter() - start))
+    print()
+
     return full_quartet_dictionary
 
 
 def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="output_tree.tre", quiet=False):
     reference_tree = Tree.get(path=referenceTreeFile, schema="newick", preserve_underscores=True)
     reference_tree.is_rooted = True
-    reference_tree_list = TreeList()
-    reference_tree_list.append(reference_tree)
+    reference_tree.encode_bipartitions()
+    bipartition_encoding = set(b.split_bitmask for b in reference_tree.bipartition_encoding)
+    labelList = [(n.taxon.label) for n in reference_tree.leaf_nodes()]
+    # reference_tree_list = TreeList()
+    # reference_tree_list.append(reference_tree)
+
 
     tn = reference_tree.taxon_namespace
 
+    start = start = time.perf_counter()
+    print('START BUILD LABEL TREE: ', start)
     splits = getListOfSplits(tn, reference_tree)
+    print('GOT LIST OF SPLITS: ', (time.perf_counter() - start))
 
+
+
+
+    counter = 0
     for split_object in splits:
+        counter += 1
         if 'left' not in split_object:
             continue
+
+        p = round((counter / len(splits)) * 100, 2)
+        sys.stdout.write("Build Label Tree Progress: %f%%   \r" % (p) )
+        sys.stdout.flush()
+
         left_combinations = list(combinations(split_object['left'], 2))
         right_combinations = list(combinations(split_object['right'], 2))
 
@@ -281,17 +317,35 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
                 combined_taxa_labels.sort()
                 quartet_dictionary_key = frozenset(combined_taxa_labels)
                 if quartet_dictionary_key in full_quartet_dictionary:
-                    extracted_tree = reference_tree.extract_tree_with_taxa(combined_taxa)
                     quartet_dictionary_value = full_quartet_dictionary[quartet_dictionary_key]
 
                     # indices of tree structures in dictionary
                     support_value = -1
-                    result0 = reference_tree_list.frequency_of_bipartition(labels=[combined_taxa_labels[0], combined_taxa_labels[1]]) + reference_tree_list.frequency_of_bipartition(labels=[combined_taxa_labels[2], combined_taxa_labels[3]])
-                    result1 = reference_tree_list.frequency_of_bipartition(labels=[combined_taxa_labels[0], combined_taxa_labels[2]]) + reference_tree_list.frequency_of_bipartition(labels=[combined_taxa_labels[1], combined_taxa_labels[3]])
-                    result2 = reference_tree_list.frequency_of_bipartition(labels=[combined_taxa_labels[0], combined_taxa_labels[3]]) + reference_tree_list.frequency_of_bipartition(labels=[combined_taxa_labels[1], combined_taxa_labels[2]])
+                    # result0 = reference_tree_list.frequency_of_bipartition(labels=[combined_taxa_labels[0], combined_taxa_labels[1]]) + reference_tree_list.frequency_of_bipartition(labels=[combined_taxa_labels[2], combined_taxa_labels[3]])
+                    # result1 = reference_tree_list.frequency_of_bipartition(labels=[combined_taxa_labels[0], combined_taxa_labels[2]]) + reference_tree_list.frequency_of_bipartition(labels=[combined_taxa_labels[1], combined_taxa_labels[3]])
+                    # result2 = reference_tree_list.frequency_of_bipartition(labels=[combined_taxa_labels[0], combined_taxa_labels[3]]) + reference_tree_list.frequency_of_bipartition(labels=[combined_taxa_labels[1], combined_taxa_labels[2]])
+                    # result0 = ((reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[0], combined_taxa_labels[1]]) in bipartition_encoding) or
+                    #           (reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[2], combined_taxa_labels[3]]) in bipartition_encoding) or
+                    #           manualBitmaskSearch(combined_taxa_labels[0], combined_taxa_labels[1], labelList, reference_tree.bipartition_encoding) or
+                    #           manualBitmaskSearch(combined_taxa_labels[2], combined_taxa_labels[3], labelList, reference_tree.bipartition_encoding))
+                    # result1 = ((reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[0], combined_taxa_labels[2]]) in bipartition_encoding) or
+                    #           (reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[1], combined_taxa_labels[3]]) in bipartition_encoding) or
+                    #           manualBitmaskSearch(combined_taxa_labels[0], combined_taxa_labels[2], labelList, reference_tree.bipartition_encoding) or
+                    #           manualBitmaskSearch(combined_taxa_labels[1], combined_taxa_labels[3], labelList, reference_tree.bipartition_encoding))
+                    # result2 = ((reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[0], combined_taxa_labels[3]]) in bipartition_encoding) or
+                    #           (reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[1], combined_taxa_labels[2]]) in bipartition_encoding) or
+                    #           manualBitmaskSearch(combined_taxa_labels[0], combined_taxa_labels[3], labelList, reference_tree.bipartition_encoding) or
+                    #           manualBitmaskSearch(combined_taxa_labels[1], combined_taxa_labels[2], labelList, reference_tree.bipartition_encoding))
+                    result0 = ((reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[0], combined_taxa_labels[1]]) in bipartition_encoding) or
+                              (reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[2], combined_taxa_labels[3]]) in bipartition_encoding))
+                    result1 = ((reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[0], combined_taxa_labels[2]]) in bipartition_encoding) or
+                              (reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[1], combined_taxa_labels[3]]) in bipartition_encoding))
+                    result2 = ((reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[0], combined_taxa_labels[3]]) in bipartition_encoding) or
+                              (reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[1], combined_taxa_labels[2]]) in bipartition_encoding))
                     results = [result0, result1, result2]
                     for i in range(3):
-                        if results[i] > 0:
+                        # if results[i] > 0:
+                        if results[i]:
                             max_val = max(quartet_dictionary_value[0], quartet_dictionary_value[1], quartet_dictionary_value[2])
                             if max_val == quartet_dictionary_value[i] and max_val != 0:
                                 support_value = 1
@@ -311,10 +365,8 @@ def getListOfSplits(taxonNamespace, tree):
     for node in tree:
         split_object = getTaxaFromBipartition(
             taxonNamespace, node.edge.bipartition)
-        # if split_object is not None:
         split_object['edge'] = node.edge
         splits.append(split_object)
-        # print(split_object)
 
     return splits
 
@@ -383,7 +435,7 @@ def runProgram(referenceTreeFile, sampleTreeList, bootstrap_cutoff_value=80, out
         print()
     buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree, quiet)
 
-
+# ./MethodsV2.py run_files/RAxML_bestTree.rcGTA_cat run_files/RAxML_bootstrap.orfg1.last_2.subSample run_files/RAxML_bootstrap.orfg10.last_2.subSample -v -c 8 > run_output.txt
 # ./MethodsV2.py test_trees/reference_tree.txt test_trees/trifurcations.txt -v -c 8
 # ./MethodsV2.py test_trees/reference_tree.txt test_trees/highest_support.txt test_trees/highest_support.txt -v -c 8
 # ./MethodsV2.py run_files/RAxML_bestTree.rcGTA_cat run_files/RAxML_bootstrap.orfg1.last_2 -v -c 8

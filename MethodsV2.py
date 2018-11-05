@@ -81,7 +81,7 @@ def getTreeQuartetSupport(tree, quartet_dictionary):
             except:
                 extraction_needed += 1
                 # print('EXTRACTION NEEDED')
-                sys.exit()
+                # sys.exit()
                 quartetExtractionSupportHelper(tree, quartet_dictionary, quartet) # SAVES OVER A SECOND!
     # print("Number of extractions needed ", extraction_needed)
     return quartet_dictionary
@@ -119,17 +119,17 @@ def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartiti
 
 
     # ERROR
-    print("-----ERROR OUTPUT BIPARTITION-----")
-    print("Sorted quartet:", sorted_quartet)
-    print()
-    print(tree.as_string('newick'))
-    print()
-    print(tree.as_ascii_plot())
-    print()
-    print(set(b.leafset_as_newick_string(tree.taxon_namespace) for b in tree.bipartition_encoding))
-    print(set(b.split_as_bitstring() for b in tree.bipartition_encoding))
-    print(set(b.leafset_taxa(tree.taxon_namespace) for b in tree.bipartition_encoding))
-    print([(n.taxon.label) for n in tree.leaf_nodes()])
+    # print("-----ERROR OUTPUT BIPARTITION-----")
+    # print("Sorted quartet:", sorted_quartet)
+    # print()
+    # print(tree.as_string('newick'))
+    # print()
+    # print(tree.as_ascii_plot())
+    # print()
+    # print(set(b.leafset_as_newick_string(tree.taxon_namespace) for b in tree.bipartition_encoding))
+    # print(set(b.split_as_bitstring() for b in tree.bipartition_encoding))
+    # print(set(b.leafset_taxa(tree.taxon_namespace) for b in tree.bipartition_encoding))
+    # print([(n.taxon.label) for n in tree.leaf_nodes()])
     # print(tree.seed_node.adjacent_nodes())
     # print(tree.seed_node.edge.head_node)
     # print(tree.seed_node.edge.rootedge)

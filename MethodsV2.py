@@ -225,17 +225,17 @@ def buildFullSupport(gene_tree_list, bootstrap_cutoff_value=80, verbose=False, q
     print("Number of cpu : ", multiprocessing.cpu_count())
 
     for bootstrap_tree_list in gene_tree_list:
-        # quartet_dictionary_list.append(buildFullSupportParallelHelper(bootstrap_tree_list, start, verbose, quartet_dictionary_queue))
-        t = multiprocessing.Process(target=buildFullSupportParallelHelper, args=(bootstrap_tree_list, start, verbose, quartet_dictionary_queue))
-        processes.append(t)
-        t.start()
-    print("processes", processes)
-
-    for one_process in processes:
-        one_process.join()
-
-    while not quartet_dictionary_queue.empty():
-        quartet_dictionary_list.append(quartet_dictionary_queue.get())
+        quartet_dictionary_list.append(buildFullSupportParallelHelper(bootstrap_tree_list, start, verbose, quartet_dictionary_queue))
+    #     t = multiprocessing.Process(target=buildFullSupportParallelHelper, args=(bootstrap_tree_list, start, verbose, quartet_dictionary_queue))
+    #     processes.append(t)
+    #     t.start()
+    # print("processes", processes)
+    #
+    # for one_process in processes:
+    #     one_process.join()
+    #
+    # while not quartet_dictionary_queue.empty():
+    #     quartet_dictionary_list.append(quartet_dictionary_queue.get())
 
     for quartet_dictionary in quartet_dictionary_list:
         # Find support > 80 and add a 1 in the full dictionary, otherwise add a 0
@@ -294,8 +294,8 @@ def buildFullSupportParallelHelper(bootstrap_tree_list, start, verbose, parallel
         print("Full quartet dictionary:")
         [print(quartet, quartet_dictionary[quartet]) for quartet in quartet_dictionary]
         print()
-    parallel_queue.put(quartet_dictionary)
-    # return quartet_dictionary
+    # parallel_queue.put(quartet_dictionary)
+    return quartet_dictionary
 
 def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="output_tree.tre", quiet=False):
     reference_tree = Tree.get(path=referenceTreeFile, schema="newick", preserve_underscores=True)

@@ -7,13 +7,15 @@ from pprint import pprint
 import json
 import argparse
 import sys
+import os
 import time
+import multiprocessing
 
 
 # STATS
 # reference tree has 95 taxa
 # smallest gene tree has 15, takes ~1min alone
-# orfg10 has 54, takes ~30 minutes for 10 bootstrap samples
+# orfg10 has 54, (from 7+ hours to 53min!!! and only 30 minutes on the super computer)
 # ~3 million quartets in reference tree (about same in full quartet dictionary)
 # ~12 million quartets embedded in branches
 
@@ -70,12 +72,11 @@ def getTreeQuartetSupport(tree, quartet_dictionary):
     counter = 0
     for quartet in quartet_dictionary:
         counter += 1
-        # sys.stdout.write("%d" % counter)
         if quartet.issubset(frozenset_of_taxa):  # if the tree contains the quartet
             p = round((counter / len(quartet_dictionary)) * 100, 2)
             e = round(extraction_needed/len(quartet_dictionary) * 100, 2)
-            sys.stdout.write("Tree support progress: %f%% \t Extractions Needed: %f%%   \r" % (p, e) )
-            sys.stdout.flush()
+            # sys.stdout.write("        Tree support progress: %f%% \t Extractions Needed: %f%%   \r" % (p, e) )
+            # sys.stdout.flush()
             try:
                 quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartition_encoding)
             except:
@@ -217,20 +218,26 @@ def buildFullSupport(gene_tree_list, bootstrap_cutoff_value=80, verbose=False, q
     start = time.perf_counter()
     print('START: ', start)
 
+    quartet_dictionary_queue = multiprocessing.Queue()
+    processes = []
+    quartet_dictionary_list = []
+
+    print("Number of cpu : ", multiprocessing.cpu_count())
+
     for bootstrap_tree_list in gene_tree_list:
-        quartet_dictionary = makeQuartetDictionary(bootstrap_tree_list)
-        print('MADE QUARTET DICTIONARY: ', (time.perf_counter() - start), '\t\t\tquartet_dictionary SIZE: ', len(quartet_dictionary))
+        # quartet_dictionary_list.append(buildFullSupportParallelHelper(bootstrap_tree_list, start, verbose, quartet_dictionary_queue))
+        t = multiprocessing.Process(target=buildFullSupportParallelHelper, args=(bootstrap_tree_list, start, verbose, quartet_dictionary_queue))
+        processes.append(t)
+        t.start()
+    print("processes", processes)
 
-        for tree in bootstrap_tree_list:
-            getTreeQuartetSupport(tree, quartet_dictionary)
-            print()
-        print('GOT FULL SUPPORT: ', (time.perf_counter() - start))
+    for one_process in processes:
+        one_process.join()
 
-        if verbose:
-            print("Full quartet dictionary:")
-            [print(quartet, quartet_dictionary[quartet]) for quartet in quartet_dictionary]
-            print()
+    while not quartet_dictionary_queue.empty():
+        quartet_dictionary_list.append(quartet_dictionary_queue.get())
 
+    for quartet_dictionary in quartet_dictionary_list:
         # Find support > 80 and add a 1 in the full dictionary, otherwise add a 0
         # Use index 6 of the list to record how many times the quartet is seen
         for quartet in quartet_dictionary:
@@ -272,6 +279,23 @@ def buildFullSupport(gene_tree_list, bootstrap_cutoff_value=80, verbose=False, q
 
     return full_quartet_dictionary
 
+def buildFullSupportParallelHelper(bootstrap_tree_list, start, verbose, parallel_queue):
+    quartet_dictionary = makeQuartetDictionary(bootstrap_tree_list)
+    print('[PID: %d] MADE QUARTET DICTIONARY: ' % os.getpid(), (time.perf_counter() - start), '\t\t\tquartet_dictionary SIZE: ', len(quartet_dictionary))
+
+    counter = 0
+    for tree in bootstrap_tree_list:
+        counter += 1
+        getTreeQuartetSupport(tree, quartet_dictionary)
+        # print('[%d/%d]' % (counter, len(bootstrap_tree_list)))
+    print('[PID: %d] GOT FULL SUPPORT: ' % os.getpid(), (time.perf_counter() - start))
+
+    if verbose:
+        print("Full quartet dictionary:")
+        [print(quartet, quartet_dictionary[quartet]) for quartet in quartet_dictionary]
+        print()
+    parallel_queue.put(quartet_dictionary)
+    # return quartet_dictionary
 
 def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="output_tree.tre", quiet=False):
     reference_tree = Tree.get(path=referenceTreeFile, schema="newick", preserve_underscores=True)

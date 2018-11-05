@@ -75,8 +75,8 @@ def getTreeQuartetSupport(tree, quartet_dictionary):
         if quartet.issubset(frozenset_of_taxa):  # if the tree contains the quartet
             p = round((counter / len(quartet_dictionary)) * 100, 2)
             e = round(extraction_needed/len(quartet_dictionary) * 100, 2)
-            # sys.stdout.write("        Tree support progress: %f%% \t Extractions Needed: %f%%   \r" % (p, e) )
-            # sys.stdout.flush()
+            sys.stdout.write("        Tree support progress: %f%% \t Extractions Needed: %f%%   \r" % (p, e) )
+            sys.stdout.flush()
             try:
                 quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartition_encoding)
             except:
@@ -287,7 +287,7 @@ def buildFullSupportParallelHelper(bootstrap_tree_list, start, verbose, parallel
     for tree in bootstrap_tree_list:
         counter += 1
         getTreeQuartetSupport(tree, quartet_dictionary)
-        # print('[%d/%d]' % (counter, len(bootstrap_tree_list)))
+        print('[%d/%d]' % (counter, len(bootstrap_tree_list)))
     print('[PID: %d] GOT FULL SUPPORT: ' % os.getpid(), (time.perf_counter() - start))
 
     if verbose:

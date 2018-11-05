@@ -15,7 +15,7 @@ import multiprocessing
 # STATS
 # reference tree has 95 taxa
 # smallest gene tree has 15, takes ~1min alone
-# orfg10 has 54, (from 7+ hours to 53min!!! and only 30 minutes on the super computer)
+# orfg10_5 has 54, (from 7+ hours to 53min!!! and only 30 minutes on the super computer)
 # ~3 million quartets in reference tree (about same in full quartet dictionary)
 # ~12 million quartets embedded in branches
 
@@ -94,8 +94,7 @@ def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartiti
 
     result0 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[1]]) in bipartition_encoding) or
               (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[2], sorted_quartet[3]]) in bipartition_encoding) or
-              manualBitmaskSearch(sorted_quartet[0], sorted_quartet[1], labelList, tree.bipartition_encoding) or
-              manualBitmaskSearch(sorted_quartet[2], sorted_quartet[3], labelList, tree.bipartition_encoding))
+              manualBitmaskSearch(sorted_quartet[0], sorted_quartet[1], sorted_quartet[2], sorted_quartet[3], labelList, tree.bipartition_encoding))
     if (result0):
         quartet_dictionary[quartet][0] = quartet_dictionary[quartet][0] + 1
         return
@@ -103,8 +102,7 @@ def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartiti
     # Check 2nd Topology
     result1 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[2]]) in bipartition_encoding) or
               (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[3]]) in bipartition_encoding) or
-              manualBitmaskSearch(sorted_quartet[0], sorted_quartet[2], labelList, tree.bipartition_encoding) or
-              manualBitmaskSearch(sorted_quartet[1], sorted_quartet[3], labelList, tree.bipartition_encoding))
+              manualBitmaskSearch(sorted_quartet[0], sorted_quartet[2], sorted_quartet[1], sorted_quartet[3], labelList, tree.bipartition_encoding))
     if (result1):
         quartet_dictionary[quartet][1] = quartet_dictionary[quartet][1] + 1
         return
@@ -112,8 +110,7 @@ def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartiti
     # Check 3rd Topology
     result2 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[3]]) in bipartition_encoding) or
               (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[2]]) in bipartition_encoding) or
-              manualBitmaskSearch(sorted_quartet[0], sorted_quartet[3], labelList, tree.bipartition_encoding) or
-              manualBitmaskSearch(sorted_quartet[1], sorted_quartet[2], labelList, tree.bipartition_encoding))
+              manualBitmaskSearch(sorted_quartet[0], sorted_quartet[3], sorted_quartet[1], sorted_quartet[2], labelList, tree.bipartition_encoding))
     if (result2):
         quartet_dictionary[quartet][2] = quartet_dictionary[quartet][2] + 1
         return
@@ -127,8 +124,10 @@ def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartiti
     # print()
     # print(tree.as_ascii_plot())
     # print()
-    # print(set(b.leafset_as_newick_string(tree.taxon_namespace) for b in tree.bipartition_encoding))
     # print(set(b.split_as_bitstring() for b in tree.bipartition_encoding))
+    # print()
+
+    # print(set(b.leafset_as_newick_string(tree.taxon_namespace) for b in tree.bipartition_encoding))
     # print(set(b.leafset_taxa(tree.taxon_namespace) for b in tree.bipartition_encoding))
     # print([(n.taxon.label) for n in tree.leaf_nodes()])
     # print(tree.seed_node.adjacent_nodes())
@@ -137,7 +136,7 @@ def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartiti
     # middle_node = tree.seed_node.adjacent_nodes()[1]
     # tree.reroot_at_node(middle_node)
     # bipartition_encoding = set(b.split_bitmask for b in tree.bipartition_encoding)
-    # # tree.update_bipartitions(suppress_unifurcations=False)
+    # tree.update_bipartitions(suppress_unifurcations=False)
     # print(tree.as_string('newick'))
     # print(tree.as_ascii_plot())
     # print(set(b.leafset_as_newick_string(tree.taxon_namespace) for b in tree.bipartition_encoding))
@@ -149,15 +148,15 @@ def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartiti
     # print(tree.extract_tree_with_taxa_labels(quartet).as_ascii_plot())
     raise Exception('Error: Topology is not a match')
 
-def manualBitmaskSearch(taxonLabel1, taxonLabel2, labelList, bipartition_encoding):
-    return False
+def manualBitmaskSearch(taxonLabel1, taxonLabel2, taxonLabel3, taxonLabel4,labelList, bipartition_encoding):
+    # return False;
+    desired1 = labelList.index(taxonLabel1)
+    desired2 = labelList.index(taxonLabel2)
+    unDesired1 = labelList.index(taxonLabel3)
+    unDesired2 = labelList.index(taxonLabel4)
     for b in bipartition_encoding:
         bString = b.split_as_bitstring()
-        zeros = 0
-        for i in bString:
-            if i is '0':
-                zeros += 1
-        if bString[labelList.index(taxonLabel1)] is bString[labelList.index(taxonLabel2)] and zeros is 2:
+        if (bString[desired1] is bString[desired2]) and (bString[unDesired1] is bString[unDesired2]) and (bString[desired1] is not bString[unDesired1]):
             return True
     return False
 

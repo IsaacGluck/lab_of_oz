@@ -330,13 +330,14 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
     counter = 0
     for split_object in splits:
         counter += 1
-        if 'left' not in split_object:
-            continue
-
         p = round((counter / len(splits)) * 100, 2)
         if timing:
             sys.stdout.write("Build Label Tree Progress: %f%%   \r" % (p) )
             sys.stdout.flush()
+
+        if 'left' not in split_object:
+            continue
+
 
         left_combinations = list(combinations(split_object['left'], 2))
         right_combinations = list(combinations(split_object['right'], 2))
@@ -373,6 +374,10 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
         split_object['edge'].head_node.label = total_support_value / total_possibilities
     if not quiet:
         print(reference_tree.as_string(schema="newick", suppress_internal_node_labels=False))
+
+    if timing:
+        print('REFERENCE TREE BUILT: ', (time.perf_counter() - start))
+        print()
     reference_tree.write(path=output_tree, schema="newick", suppress_internal_node_labels=False)
 
 
@@ -443,7 +448,6 @@ def runProgram(referenceTreeFile, sampleTreeList, bootstrap_cutoff_value=80, out
         if not reference_tree_namespace.has_taxa_labels(s.taxon_namespace.labels()):
             print('Error: reference tree is of a different taxon namespace as the sample trees')
             return
-
 
     full_quartet_dictionary = buildFullSupport(sample_tree_list, bootstrap_cutoff_value, verbose, quiet, timing)
     if verbose:

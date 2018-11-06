@@ -356,21 +356,6 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
 
                     # indices of tree structures in dictionary
                     support_value = -1
-                    # result0 = reference_tree_list.frequency_of_bipartition(labels=[combined_taxa_labels[0], combined_taxa_labels[1]]) + reference_tree_list.frequency_of_bipartition(labels=[combined_taxa_labels[2], combined_taxa_labels[3]])
-                    # result1 = reference_tree_list.frequency_of_bipartition(labels=[combined_taxa_labels[0], combined_taxa_labels[2]]) + reference_tree_list.frequency_of_bipartition(labels=[combined_taxa_labels[1], combined_taxa_labels[3]])
-                    # result2 = reference_tree_list.frequency_of_bipartition(labels=[combined_taxa_labels[0], combined_taxa_labels[3]]) + reference_tree_list.frequency_of_bipartition(labels=[combined_taxa_labels[1], combined_taxa_labels[2]])
-                    # result0 = ((reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[0], combined_taxa_labels[1]]) in bipartition_encoding) or
-                    #           (reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[2], combined_taxa_labels[3]]) in bipartition_encoding) or
-                    #           manualBitmaskSearch(combined_taxa_labels[0], combined_taxa_labels[1], labelList, reference_tree.bipartition_encoding) or
-                    #           manualBitmaskSearch(combined_taxa_labels[2], combined_taxa_labels[3], labelList, reference_tree.bipartition_encoding))
-                    # result1 = ((reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[0], combined_taxa_labels[2]]) in bipartition_encoding) or
-                    #           (reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[1], combined_taxa_labels[3]]) in bipartition_encoding) or
-                    #           manualBitmaskSearch(combined_taxa_labels[0], combined_taxa_labels[2], labelList, reference_tree.bipartition_encoding) or
-                    #           manualBitmaskSearch(combined_taxa_labels[1], combined_taxa_labels[3], labelList, reference_tree.bipartition_encoding))
-                    # result2 = ((reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[0], combined_taxa_labels[3]]) in bipartition_encoding) or
-                    #           (reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[1], combined_taxa_labels[2]]) in bipartition_encoding) or
-                    #           manualBitmaskSearch(combined_taxa_labels[0], combined_taxa_labels[3], labelList, reference_tree.bipartition_encoding) or
-                    #           manualBitmaskSearch(combined_taxa_labels[1], combined_taxa_labels[2], labelList, reference_tree.bipartition_encoding))
                     result0 = ((reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[0], combined_taxa_labels[1]]) in bipartition_encoding) or
                               (reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[2], combined_taxa_labels[3]]) in bipartition_encoding))
                     result1 = ((reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[0], combined_taxa_labels[2]]) in bipartition_encoding) or
@@ -379,7 +364,6 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
                               (reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[1], combined_taxa_labels[2]]) in bipartition_encoding))
                     results = [result0, result1, result2]
                     for i in range(3):
-                        # if results[i] > 0:
                         if results[i]:
                             max_val = max(quartet_dictionary_value[0], quartet_dictionary_value[1], quartet_dictionary_value[2])
                             if max_val == quartet_dictionary_value[i] and max_val != 0:

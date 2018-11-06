@@ -60,7 +60,7 @@ def makeQuartetDictionary(tree_list):
 
 # Input: Dendropy Tree object, a quartet dictionary as created by makeQuartetDictionary()
 # Output: A new quartet dictionary with updated support vectors for that tree
-def getTreeQuartetSupport(tree, quartet_dictionary):
+def getTreeQuartetSupport(tree, quartet_dictionary, timing):
     taxon_label_list = [(n.taxon.label) for n in tree.leaf_nodes()]
     frozenset_of_taxa = frozenset(taxon_label_list)  # unique set of all taxa
 
@@ -75,16 +75,15 @@ def getTreeQuartetSupport(tree, quartet_dictionary):
         if quartet.issubset(frozenset_of_taxa):  # if the tree contains the quartet
             p = round((counter / len(quartet_dictionary)) * 100, 2)
             e = round(extraction_needed/len(quartet_dictionary) * 100, 2)
-            sys.stdout.write("        Tree support progress: %f%% \t Extractions Needed: %f%%   \r" % (p, e) )
-            sys.stdout.flush()
+            if timing:
+                sys.stdout.write("        Tree support progress: %f%% \t Extractions Needed: %f%%   \r" % (p, e) )
+                sys.stdout.flush()
             try:
                 quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartition_encoding)
             except:
                 extraction_needed += 1
-                # print('EXTRACTION NEEDED')
                 # sys.exit()
                 quartetExtractionSupportHelper(tree, quartet_dictionary, quartet) # SAVES OVER A SECOND!
-    # print("Number of extractions needed ", extraction_needed)
     return quartet_dictionary
 
 def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartition_encoding):
@@ -93,26 +92,28 @@ def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartiti
     sorted_quartet.sort()
 
     result0 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[1]]) in bipartition_encoding) or
-              (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[2], sorted_quartet[3]]) in bipartition_encoding) or
-              manualBitmaskSearch(sorted_quartet[0], sorted_quartet[1], sorted_quartet[2], sorted_quartet[3], labelList, tree.bipartition_encoding))
+              (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[2], sorted_quartet[3]]) in bipartition_encoding))
     if (result0):
         quartet_dictionary[quartet][0] = quartet_dictionary[quartet][0] + 1
         return
 
     # Check 2nd Topology
     result1 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[2]]) in bipartition_encoding) or
-              (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[3]]) in bipartition_encoding) or
-              manualBitmaskSearch(sorted_quartet[0], sorted_quartet[2], sorted_quartet[1], sorted_quartet[3], labelList, tree.bipartition_encoding))
+              (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[3]]) in bipartition_encoding))
     if (result1):
         quartet_dictionary[quartet][1] = quartet_dictionary[quartet][1] + 1
         return
 
     # Check 3rd Topology
     result2 = ((tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[3]]) in bipartition_encoding) or
-              (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[2]]) in bipartition_encoding) or
-              manualBitmaskSearch(sorted_quartet[0], sorted_quartet[3], sorted_quartet[1], sorted_quartet[2], labelList, tree.bipartition_encoding))
+              (tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[1], sorted_quartet[2]]) in bipartition_encoding))
     if (result2):
         quartet_dictionary[quartet][2] = quartet_dictionary[quartet][2] + 1
+        return
+
+    dict_index = manualBitmaskSearch(sorted_quartet, labelList, tree.bipartition_encoding)
+    if (dict_index >= 0):
+        quartet_dictionary[quartet][dict_index] = quartet_dictionary[quartet][dict_index] + 1
         return
 
 
@@ -148,17 +149,21 @@ def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartiti
     # print(tree.extract_tree_with_taxa_labels(quartet).as_ascii_plot())
     raise Exception('Error: Topology is not a match')
 
-def manualBitmaskSearch(taxonLabel1, taxonLabel2, taxonLabel3, taxonLabel4,labelList, bipartition_encoding):
+def manualBitmaskSearch(sorted_quartet, labelList, bipartition_encoding):
     # return False;
-    desired1 = labelList.index(taxonLabel1)
-    desired2 = labelList.index(taxonLabel2)
-    unDesired1 = labelList.index(taxonLabel3)
-    unDesired2 = labelList.index(taxonLabel4)
+    taxa_zero = labelList.index(sorted_quartet[0])
+    taxa_one = labelList.index(sorted_quartet[1])
+    taxa_two = labelList.index(sorted_quartet[2])
+    taxa_three = labelList.index(sorted_quartet[3])
     for b in bipartition_encoding:
         bString = b.split_as_bitstring()
-        if (bString[desired1] is bString[desired2]) and (bString[unDesired1] is bString[unDesired2]) and (bString[desired1] is not bString[unDesired1]):
-            return True
-    return False
+        if (bString[taxa_zero] is bString[taxa_one]) and (bString[taxa_two] is bString[taxa_three]) and (bString[taxa_zero] is not bString[taxa_two]):
+            return 0
+        if (bString[taxa_zero] is bString[taxa_two]) and (bString[taxa_one] is bString[taxa_three]) and (bString[taxa_zero] is not bString[taxa_one]):
+            return 1
+        if (bString[taxa_zero] is bString[taxa_three]) and (bString[taxa_one] is bString[taxa_two]) and (bString[taxa_zero] is not bString[taxa_one]):
+            return 2
+    return -1
 
 def quartetExtractionSupportHelper(tree, quartet_dictionary, quartet):
     sorted_quartet = list(quartet)
@@ -208,23 +213,22 @@ def quartetExtractionSupportHelper(tree, quartet_dictionary, quartet):
 
 # Input: An array of Dendropy TreeLists, a bootstrap cutoff value defaulting to 80
 # Output: The full quartet dictionary for all gene trees containing P(t) and IC values
-def buildFullSupport(gene_tree_list, bootstrap_cutoff_value=80, verbose=False, quiet=False):
+def buildFullSupport(gene_tree_list, bootstrap_cutoff_value=80, verbose=False, quiet=False, timing=False):
     if not quiet:
         print("Combining gene tree data into one dictionary...")
         print()
     full_quartet_dictionary = {}
 
     start = time.perf_counter()
-    print('START: ', start)
+    if timing:
+        print('START: ', start)
 
     quartet_dictionary_queue = multiprocessing.Queue()
     processes = []
     quartet_dictionary_list = []
 
-    print("Number of cpu : ", multiprocessing.cpu_count())
-
     for bootstrap_tree_list in gene_tree_list:
-        quartet_dictionary_list.append(buildFullSupportParallelHelper(bootstrap_tree_list, start, verbose, quartet_dictionary_queue))
+        quartet_dictionary_list.append(buildFullSupportParallelHelper(bootstrap_tree_list, start, verbose, quartet_dictionary_queue, timing))
     #     t = multiprocessing.Process(target=buildFullSupportParallelHelper, args=(bootstrap_tree_list, start, verbose, quartet_dictionary_queue))
     #     processes.append(t)
     #     t.start()
@@ -250,7 +254,8 @@ def buildFullSupport(gene_tree_list, bootstrap_cutoff_value=80, verbose=False, q
                 1.0 if quartet_dictionary[quartet][1] >= bootstrap_cutoff_value else 0.0)
             full_quartet_dictionary[quartet][2] += (
                 1.0 if quartet_dictionary[quartet][2] >= bootstrap_cutoff_value else 0.0)
-        print('CONVERTED SUPPORT ABOVE CUTOFF TO 1: ', (time.perf_counter() - start), '\t\t\tfull_quartet_dictionary SIZE: ', len(full_quartet_dictionary))
+        if timing:
+            print('CONVERTED SUPPORT ABOVE CUTOFF TO 1: ', (time.perf_counter() - start), '\t\t\tfull_quartet_dictionary SIZE: ', len(full_quartet_dictionary))
 
     # full_quartet_dictionary now has all the support vectors, s(t)
     # Next we must normalize the support vectors: p(t) = s(ti)/(s(t1) + s(t2) + s(t3))
@@ -273,21 +278,25 @@ def buildFullSupport(gene_tree_list, bootstrap_cutoff_value=80, verbose=False, q
 
         full_quartet_dictionary[quartet][3] = iq
 
-    print('IC VALUES COMPUTED: ', (time.perf_counter() - start))
-    print()
+    if timing:
+        print('IC VALUES COMPUTED: ', (time.perf_counter() - start))
+        print()
 
     return full_quartet_dictionary
 
-def buildFullSupportParallelHelper(bootstrap_tree_list, start, verbose, parallel_queue):
+def buildFullSupportParallelHelper(bootstrap_tree_list, start, verbose, parallel_queue, timing):
     quartet_dictionary = makeQuartetDictionary(bootstrap_tree_list)
-    print('[PID: %d] MADE QUARTET DICTIONARY: ' % os.getpid(), (time.perf_counter() - start), '\t\t\tquartet_dictionary SIZE: ', len(quartet_dictionary))
+    if timing:
+        print('[PID: %d] MADE QUARTET DICTIONARY: ' % os.getpid(), (time.perf_counter() - start), '\t\t\tquartet_dictionary SIZE: ', len(quartet_dictionary))
 
     counter = 0
     for tree in bootstrap_tree_list:
         counter += 1
-        getTreeQuartetSupport(tree, quartet_dictionary)
-        print('[%d/%d]' % (counter, len(bootstrap_tree_list)))
-    print('[PID: %d] GOT FULL SUPPORT: ' % os.getpid(), (time.perf_counter() - start))
+        getTreeQuartetSupport(tree, quartet_dictionary, timing)
+        if timing:
+            print('[%d/%d]' % (counter, len(bootstrap_tree_list)))
+    if timing:
+        print('[PID: %d] GOT FULL SUPPORT: ' % os.getpid(), (time.perf_counter() - start))
 
     if verbose:
         print("Full quartet dictionary:")
@@ -296,7 +305,7 @@ def buildFullSupportParallelHelper(bootstrap_tree_list, start, verbose, parallel
     # parallel_queue.put(quartet_dictionary)
     return quartet_dictionary
 
-def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="output_tree.tre", quiet=False):
+def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="output_tree.tre", quiet=False, timing=False):
     reference_tree = Tree.get(path=referenceTreeFile, schema="newick", preserve_underscores=True)
     reference_tree.is_rooted = True
     reference_tree.encode_bipartitions()
@@ -309,9 +318,11 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
     tn = reference_tree.taxon_namespace
 
     start = start = time.perf_counter()
-    print('START BUILD LABEL TREE: ', start)
+    if timing:
+        print('START BUILD LABEL TREE: ', start)
     splits = getListOfSplits(tn, reference_tree)
-    print('GOT LIST OF SPLITS: ', (time.perf_counter() - start))
+    if timing:
+        print('GOT LIST OF SPLITS: ', (time.perf_counter() - start))
 
 
 
@@ -323,8 +334,9 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
             continue
 
         p = round((counter / len(splits)) * 100, 2)
-        sys.stdout.write("Build Label Tree Progress: %f%%   \r" % (p) )
-        sys.stdout.flush()
+        if timing:
+            sys.stdout.write("Build Label Tree Progress: %f%%   \r" % (p) )
+            sys.stdout.flush()
 
         left_combinations = list(combinations(split_object['left'], 2))
         right_combinations = list(combinations(split_object['right'], 2))
@@ -422,12 +434,15 @@ def getTaxaFromBipartition(taxonNamespace, bipartition):
 
 
 ########## ARGPARSE
-def runProgram(referenceTreeFile, sampleTreeList, bootstrap_cutoff_value=80, output_tree="output_tree.tre", verbose=False, quiet=False):
+def runProgram(referenceTreeFile, sampleTreeList, bootstrap_cutoff_value=80, output_tree="output_tree.tre", verbose=False, quiet=False, timing=False):
     if verbose:
         print("Reference Tree: ", referenceTreeFile)
         print("Sample Tree List: ", sampleTreeList)
         print("Bootstrap Cutoff Value: ", bootstrap_cutoff_value)
         print("Output Tree File: ", output_tree)
+
+    if timing:
+        verbose = False
 
     try:
         reference_tree = Tree.get(path=referenceTreeFile, schema="newick", preserve_underscores=True)
@@ -439,10 +454,6 @@ def runProgram(referenceTreeFile, sampleTreeList, bootstrap_cutoff_value=80, out
 
     sample_tree_list = readTrees(sampleTreeList, reference_tree_namespace, quiet)
 
-
-    # print(reference_tree_namespace.labels())
-    # print()
-
     # Check if gene tree taxon namespace matches reference tree
     for s in sample_tree_list:
         if not reference_tree_namespace.has_taxa_labels(s.taxon_namespace.labels()):
@@ -450,13 +461,13 @@ def runProgram(referenceTreeFile, sampleTreeList, bootstrap_cutoff_value=80, out
             return
 
 
-    full_quartet_dictionary = buildFullSupport(sample_tree_list, bootstrap_cutoff_value, verbose, quiet)
+    full_quartet_dictionary = buildFullSupport(sample_tree_list, bootstrap_cutoff_value, verbose, quiet, timing)
     if verbose:
         print("Full quartet dictionary with support values")
         [print(quartet, full_quartet_dictionary[quartet])
                for quartet in full_quartet_dictionary]
         print()
-    buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree, quiet)
+    buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree, quiet, timing)
 
 # ./MethodsV2.py run_files/RAxML_bestTree.rcGTA_cat run_files/RAxML_bootstrap.orfg1.last_2.subSample run_files/RAxML_bootstrap.orfg10.last_2.subSample -v -c 8 > run_output.txt
 # ./MethodsV2.py test_trees/reference_tree.txt test_trees/trifurcations.txt -v -c 8
@@ -470,6 +481,7 @@ parser.add_argument('bootstrap_gene_tree_files', metavar='<Bootstrap Tree Files>
                     help='The gene tree file paths containing bootstrap trees')
 parser.add_argument("-v", "--verbose", action="store_true", default=False)
 parser.add_argument("-q", "--quiet", action="store_true", default=False)
+parser.add_argument("-t", "--timing", action="store_true", default=False, help='Setting timing turns verbose off.')
 parser.add_argument("-c", "--cutoff", default=80, type=int,
                     help="Bootstrap Cutoff Value")
 parser.add_argument("-o", "--output_file", default="output_tree.tre",
@@ -477,4 +489,4 @@ parser.add_argument("-o", "--output_file", default="output_tree.tre",
 args = parser.parse_args()
 
 runProgram(args.reference_tree_file, args.bootstrap_gene_tree_files,
-           bootstrap_cutoff_value=args.cutoff, output_tree=args.output_file, verbose=args.verbose, quiet=args.quiet)
+           bootstrap_cutoff_value=args.cutoff, output_tree=args.output_file, verbose=args.verbose, quiet=args.quiet, timing=args.timing)

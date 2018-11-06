@@ -61,25 +61,19 @@ def makeQuartetDictionary(tree_list):
 # Input: Dendropy Tree object, a quartet dictionary as created by makeQuartetDictionary()
 # Output: A new quartet dictionary with updated support vectors for that tree
 def getTreeQuartetSupport(tree, quartet_dictionary, timing):
-    taxon_label_list = [(n.taxon.label) for n in tree.leaf_nodes()]
-    frozenset_of_taxa = frozenset(taxon_label_list)  # unique set of all taxa
-
     tree.is_rooted = False
-    tree.update_bipartitions()
+    tree.encode_bipartitions()
+
+    # taxon_label_list = [(n.taxon.label) for n in tree.leaf_nodes()]
+    taxon_label_list = tree.taxon_namespace.labels()
+
+    # taxon_label_list.sort()
+    frozenset_of_taxa = frozenset(taxon_label_list)  # unique set of all taxa
     bipartition_encoding = set(b.split_bitmask for b in tree.bipartition_encoding)
     bitstring_encoding = []
-    # print('HERE')
-    # for b in tree.bipartition_encoding:
-    #     if not b.is_trivial():
-    #         # print(b.split_as_bitstring())
-    #         temp = [b.split_as_bitstring(), b.leafset_as_newick_string(tree.taxon_namespace)]
-    #         bitstring_encoding.append(temp)
-    # tree.bipartition_encoding
-    # bitstring_encoding = [b.split_as_bitstring() for b in tree.bipartition_encoding]
-    # tree.taxon_namespace.bitmask_taxa_list(bitstring_encoding[27])
-    temp = tree.encode_bipartitions()[18]
-    print(tree.taxon_namespace.bitmask_taxa_list(temp.split_bitmask))
-    pdm = tree.phylogenetic_distance_matrix()
+    for b in tree.bipartition_encoding:
+        if not b.is_trivial():
+            bitstring_encoding.append(b.split_as_bitstring())
 
     extraction_needed = 0
     counter = 0
@@ -91,45 +85,16 @@ def getTreeQuartetSupport(tree, quartet_dictionary, timing):
             if timing:
                 sys.stdout.write("        Tree support progress: %f%% \t Extractions Needed: %f%%   \r" % (p, e) )
                 sys.stdout.flush()
-            flag = False
-            try:
-                num = quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartition_encoding, pdm)
-                if num is -1:
-                    flag = True
-            except:
-                quit()
-                extraction_needed += 1
-                # sorted_quartet = list(quartet)
-                # sorted_quartet.sort()
-                # val = edgeDistanceSearch(sorted_quartet, tree.taxon_namespace, pdm)
-                # print()
-                # print('HEREHEREHEREH: ', val is quartetExtractionSupportHelper(tree, quartet_dictionary, quartet)) # SAVES OVER A SECOND!)
-                # print()
-                quartetExtractionSupportHelper(tree, quartet_dictionary, quartet)
-                # quit()
-            if flag: # TRY SUM OF THE LENGTHS
-                sorted_quartet = list(quartet)
-                sorted_quartet.sort()
-                print(sorted_quartet)
-                taxon0 = tree.taxon_namespace.get_taxon(sorted_quartet[0])
-                taxon1 = tree.taxon_namespace.get_taxon(sorted_quartet[1])
-                taxon2 = tree.taxon_namespace.get_taxon(sorted_quartet[2])
-                taxon3 = tree.taxon_namespace.get_taxon(sorted_quartet[3])
-                print()
-                print(tree.as_ascii_plot())
-                print()
-                print('0,1: ', pdm.distance(taxon0, taxon1, is_weighted_edge_distances=False))
-                print('0,2: ', pdm.distance(taxon0, taxon2, is_weighted_edge_distances=False))
-                print('0,3: ', pdm.distance(taxon0, taxon3, is_weighted_edge_distances=False))
-                print('1,2: ', pdm.distance(taxon1, taxon2, is_weighted_edge_distances=False))
-                print('1,3: ', pdm.distance(taxon1, taxon3, is_weighted_edge_distances=False))
-                print('2,3: ', pdm.distance(taxon2, taxon3, is_weighted_edge_distances=False))
-                print()
-                quit()
+            # try:
+            dict_index = quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartition_encoding, taxon_label_list, bitstring_encoding)
+            if dict_index < 0:
+                sys.exit(1)
+            # except:
+            #     extraction_needed += 1
+            #     dict_index = quartetExtractionSupportHelper(tree, quartet_dictionary, quartet)
     return quartet_dictionary
 
-def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartition_encoding, phylogenetic_distance_matrix):
-    labelList = [(n.taxon.label) for n in tree.leaf_nodes()]
+def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartition_encoding, labelList, bitstring_encoding):
     sorted_quartet = list(quartet)
     sorted_quartet.sort()
 
@@ -153,57 +118,59 @@ def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartiti
         quartet_dictionary[quartet][2] = quartet_dictionary[quartet][2] + 1
         return 2
 
-    # dict_index = edgeDistanceSearch(sorted_quartet, tree.taxon_namespace, phylogenetic_distance_matrix)
-    # compare = quartetExtractionSupportHelper(tree, quartet_dictionary, quartet)
-    # if (dict_index is not compare):
-    #     return -1
-    # if (dict_index >= 0):
-    #     quartet_dictionary[quartet][dict_index] = quartet_dictionary[quartet][dict_index] + 1
-    #     return dict_index
+    dict_index = manualBitmaskSearch(sorted_quartet, labelList, bitstring_encoding)
+    compare = quartetExtractionSupportHelper(tree, quartet_dictionary, quartet)
+    if (dict_index is not compare):
+        dict_index = -1
+    if (dict_index >= 0):
+        quartet_dictionary[quartet][dict_index] = quartet_dictionary[quartet][dict_index] + 1
+        return dict_index
 
 
     # ERROR
-    print("-----ERROR OUTPUT BIPARTITION-----")
-    print("Sorted quartet:", sorted_quartet)
-    print()
-    print(tree.as_string('newick'))
-    print()
-    print(tree.as_ascii_plot())
-    print()
-    temp = [b.split_as_bitstring() for b in tree.bipartition_encoding]
-    temp.sort()
-    print(temp)
-    print()
-    print(tree.extract_tree_with_taxa_labels(quartet).as_ascii_plot())
+    if dict_index < 0:
+        print()
+        print("-----ERROR OUTPUT BIPARTITION-----")
+        print("Sorted quartet:", sorted_quartet)
+        print([labelList.index(sorted_quartet[0]), labelList.index(sorted_quartet[1]), labelList.index(sorted_quartet[2]), labelList.index(sorted_quartet[3])])
+        print([len(labelList) - labelList.index(sorted_quartet[0]) - 1, len(labelList) - labelList.index(sorted_quartet[1]) - 1, len(labelList) - labelList.index(sorted_quartet[2]) - 1, len(labelList) - labelList.index(sorted_quartet[3]) - 1])
+        print()
+        print('Newick Tree: ', tree.as_string('newick'))
+        print()
+        print(tree.as_ascii_plot())
+        print()
+        print(labelList)
+        print(tree.taxon_namespace.labels())
+        # print([[b.split_as_bitstring(), b.leafset_as_newick_string(tree.taxon_namespace)] for b in tree.bipartition_encoding])
+        print()
+        # temp = [b.split_as_bitstring() for b in tree.bipartition_encoding]
+        # temp.sort()
+        # temp = [[t.taxon_bitmask] for t in quartet]
+        # print('temp ', temp)
+        print(bitstring_encoding)
+        print()
+        print(tree.extract_tree_with_taxa_labels(quartet).as_ascii_plot())
+        return dict_index
 
-    # print(set(b.leafset_as_newick_string(tree.taxon_namespace) for b in tree.bipartition_encoding))
-    # print(set(b.leafset_taxa(tree.taxon_namespace) for b in tree.bipartition_encoding))
-    # print([(n.taxon.label) for n in tree.leaf_nodes()])
-    # print(tree.seed_node.adjacent_nodes())
-    # print(tree.seed_node.edge.head_node)
-    # print(tree.seed_node.edge.rootedge)
-    # middle_node = tree.seed_node.adjacent_nodes()[1]
-    # tree.reroot_at_node(middle_node)
-    # bipartition_encoding = set(b.split_bitmask for b in tree.bipartition_encoding)
-    # tree.update_bipartitions(suppress_unifurcations=False)
-    # print(tree.as_string('newick'))
-    # print(tree.as_ascii_plot())
-    # print(set(b.leafset_as_newick_string(tree.taxon_namespace) for b in tree.bipartition_encoding))
-    # print()
-    # print([b for b in bipartition_encoding])
-    # print()
-    # print(tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[2]]))
-    # print(manualBitmaskSearch(sorted_quartet[2], sorted_quartet[0], [(n.taxon.label) for n in tree.leaf_nodes()], tree.bipartition_encoding))
-    # print(tree.extract_tree_with_taxa_labels(quartet).as_ascii_plot())
+        # print(set(b.leafset_as_newick_string(tree.taxon_namespace) for b in tree.bipartition_encoding))
+        # print(set(b.leafset_taxa(tree.taxon_namespace) for b in tree.bipartition_encoding))
+        # print(tree.taxon_namespace.taxa_bitmask(labels=[sorted_quartet[0], sorted_quartet[2]]))
+        # print(manualBitmaskSearch(sorted_quartet[2], sorted_quartet[0], [(n.taxon.label) for n in tree.leaf_nodes()], tree.bipartition_encoding))
+        # print(tree.extract_tree_with_taxa_labels(quartet).as_ascii_plot())
+        pass
     raise Exception('Error: Topology is not a match')
 
-def manualBitmaskSearch(sorted_quartet, labelList, bipartition_encoding):
+def manualBitmaskSearch(sorted_quartet, labelList, bitstring_encoding):
     # return False;
-    taxa_zero = labelList.index(sorted_quartet[0])
-    taxa_one = labelList.index(sorted_quartet[1])
-    taxa_two = labelList.index(sorted_quartet[2])
-    taxa_three = labelList.index(sorted_quartet[3])
-    for bString in bipartition_encoding:
+    taxa_zero  = len(labelList) - labelList.index(sorted_quartet[0]) - 1;
+    taxa_one   = len(labelList) - labelList.index(sorted_quartet[1]) - 1;
+    taxa_two   = len(labelList) - labelList.index(sorted_quartet[2]) - 1;
+    taxa_three = len(labelList) - labelList.index(sorted_quartet[3]) - 1;
+    # taxa_zero  = labelList.index(sorted_quartet[0]);
+    # taxa_one   = labelList.index(sorted_quartet[1]);
+    # taxa_two   = labelList.index(sorted_quartet[2]);
+    # taxa_three = labelList.index(sorted_quartet[3]);
+    for bString in bitstring_encoding:
 
         if (bString[taxa_zero] is bString[taxa_one]) and (bString[taxa_two] is bString[taxa_three]) and (bString[taxa_zero] is not bString[taxa_two]):
             return 0
@@ -211,40 +178,6 @@ def manualBitmaskSearch(sorted_quartet, labelList, bipartition_encoding):
             return 1
         if (bString[taxa_zero] is bString[taxa_three]) and (bString[taxa_one] is bString[taxa_two]) and (bString[taxa_zero] is not bString[taxa_one]):
             return 2
-    return -1
-
-def edgeDistanceSearch(sorted_quartet, taxon_namespace, phylogenetic_distance_matrix):
-    # pdm = tree.phylogenetic_distance_matrix()
-    # print('0,1: ', pdm.distance(taxon0, taxon1, is_weighted_edge_distances=False))
-    # print('0,2: ', pdm.distance(taxon0, taxon2, is_weighted_edge_distances=False))
-    # print('0,3: ', pdm.distance(taxon0, taxon3, is_weighted_edge_distances=False))
-    # print('1,2: ', pdm.distance(taxon1, taxon2, is_weighted_edge_distances=False))
-    # print('1,3: ', pdm.distance(taxon1, taxon3, is_weighted_edge_distances=False))
-    # print('2,3: ', pdm.distance(taxon2, taxon3, is_weighted_edge_distances=False))
-    # print()
-    taxon0 = taxon_namespace.get_taxon(sorted_quartet[0])
-    taxon1 = taxon_namespace.get_taxon(sorted_quartet[1])
-    taxon2 = taxon_namespace.get_taxon(sorted_quartet[2])
-    taxon3 = taxon_namespace.get_taxon(sorted_quartet[3])
-
-    distance1 = phylogenetic_distance_matrix.distance(taxon0, taxon1, is_weighted_edge_distances=False)
-    distance2 = phylogenetic_distance_matrix.distance(taxon2, taxon3, is_weighted_edge_distances=False)
-
-    distance3 = phylogenetic_distance_matrix.distance(taxon0, taxon2, is_weighted_edge_distances=False)
-    distance4 = phylogenetic_distance_matrix.distance(taxon1, taxon3, is_weighted_edge_distances=False)
-
-    distance5 = phylogenetic_distance_matrix.distance(taxon0, taxon3, is_weighted_edge_distances=False)
-    distance6 = phylogenetic_distance_matrix.distance(taxon1, taxon2, is_weighted_edge_distances=False)
-
-    min_distance = min(distance1, distance2, distance3, distance4, distance5, distance6)
-
-    if (distance1 is min_distance) or (distance2 is min_distance):
-        return 0
-    if (distance3 is min_distance) or (distance4 is min_distance):
-        return 1
-    if (distance5 is min_distance) or (distance6 is min_distance):
-        return 2
-
     return -1
 
 def quartetExtractionSupportHelper(tree, quartet_dictionary, quartet):
@@ -526,10 +459,10 @@ def runProgram(referenceTreeFile, sampleTreeList, bootstrap_cutoff_value=80, out
     sample_tree_list = readTrees(sampleTreeList, reference_tree_namespace, quiet)
 
     # Check if gene tree taxon namespace matches reference tree
-    for s in sample_tree_list:
-        if not reference_tree_namespace.has_taxa_labels(s.taxon_namespace.labels()):
-            print('Error: reference tree is of a different taxon namespace as the sample trees')
-            return
+    # for s in sample_tree_list:
+    #     if not reference_tree_namespace.has_taxa_labels(s.taxon_namespace.labels()):
+    #         print('Error: reference tree is of a different taxon namespace as the sample trees')
+    #         return
 
     full_quartet_dictionary = buildFullSupport(sample_tree_list, bootstrap_cutoff_value, verbose, quiet, timing)
     if verbose:

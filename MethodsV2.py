@@ -85,13 +85,13 @@ def getTreeQuartetSupport(tree, quartet_dictionary, timing):
             if timing:
                 sys.stdout.write("        Tree support progress: %f%% \t Extractions Needed: %f%%   \r" % (p, e) )
                 sys.stdout.flush()
-            # try:
-            dict_index = quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartition_encoding, taxon_label_list, bitstring_encoding)
-            if dict_index < 0:
-                sys.exit(1)
-            # except:
-            #     extraction_needed += 1
-            #     dict_index = quartetExtractionSupportHelper(tree, quartet_dictionary, quartet)
+            try:
+                dict_index = quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartition_encoding, taxon_label_list, bitstring_encoding)
+            # if dict_index < 0:
+            #     sys.exit(1)
+            except:
+                extraction_needed += 1
+                dict_index = quartetExtractionSupportHelper(tree, quartet_dictionary, quartet)
     return quartet_dictionary
 
 def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartition_encoding, labelList, bitstring_encoding):

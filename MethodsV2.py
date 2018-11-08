@@ -51,9 +51,9 @@ def makeQuartetDictionary(tree_list):
     dictonary_of_quartets = {}
 
     for tuple_of_leaves in combinations_of_taxa:
-        sorted_list_of_leaves = list(tuple_of_leaves)
-        sorted_list_of_leaves.sort()
-        frozenset_of_leaves = frozenset(sorted_list_of_leaves)
+        # sorted_list_of_leaves = list(tuple_of_leaves)
+        # sorted_list_of_leaves.sort()
+        frozenset_of_leaves = frozenset(tuple_of_leaves)
         dictonary_of_quartets[frozenset_of_leaves] = [0, 0, 0]
 
     return dictonary_of_quartets
@@ -64,16 +64,16 @@ def getTreeQuartetSupport(tree, quartet_dictionary, timing):
     tree.is_rooted = False
     tree.encode_bipartitions()
 
-    # taxon_label_list = [(n.taxon.label) for n in tree.leaf_nodes()]
     taxon_label_list = tree.taxon_namespace.labels()
 
-    # taxon_label_list.sort()
     frozenset_of_taxa = frozenset(taxon_label_list)  # unique set of all taxa
     bipartition_encoding = set(b.split_bitmask for b in tree.bipartition_encoding)
     bitstring_encoding = []
     for b in tree.bipartition_encoding:
         if not b.is_trivial():
             bitstring_encoding.append(b.split_as_bitstring())
+
+    bipartition_dictionary = makeBipartitionDictionary(taxon_label_list, bitstring_encoding)
 
     extraction_needed = 0
     counter = 0
@@ -83,10 +83,10 @@ def getTreeQuartetSupport(tree, quartet_dictionary, timing):
             p = round((counter / len(quartet_dictionary)) * 100, 2)
             e = round(extraction_needed/len(quartet_dictionary) * 100, 2)
             if timing:
-                sys.stdout.write("        Tree support progress: %f%% \t Extractions Needed: %f%%   \r" % (p, e) )
+                sys.stdout.write("                         Tree support progress: %f%% \t Extractions Needed: %f%%   \r" % (p, e) )
                 sys.stdout.flush()
             try:
-                dict_index = quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartition_encoding, taxon_label_list, bitstring_encoding)
+                dict_index = quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartition_encoding, taxon_label_list, bitstring_encoding, bipartition_dictionary)
             # if dict_index < 0:
             #     sys.exit(1)
             except:
@@ -94,7 +94,7 @@ def getTreeQuartetSupport(tree, quartet_dictionary, timing):
                 dict_index = quartetExtractionSupportHelper(tree, quartet_dictionary, quartet)
     return quartet_dictionary
 
-def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartition_encoding, labelList, bitstring_encoding):
+def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartition_encoding, taxon_label_list, bitstring_encoding, bipartition_dictionary):
     sorted_quartet = list(quartet)
     sorted_quartet.sort()
 
@@ -118,10 +118,11 @@ def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartiti
         quartet_dictionary[quartet][2] = quartet_dictionary[quartet][2] + 1
         return 2
 
-    dict_index = manualBitmaskSearch(sorted_quartet, labelList, bitstring_encoding)
-    compare = quartetExtractionSupportHelper(tree, quartet_dictionary, quartet)
-    if (dict_index is not compare):
-        dict_index = -1
+    # dict_index = manualBitmaskSearch(sorted_quartet, taxon_label_list, bitstring_encoding)
+    dict_index = manualBitmaskSearchV2(sorted_quartet, bipartition_dictionary)
+    # compare = quartetExtractionSupportHelper(tree, quartet_dictionary, quartet)
+    # if (dict_index is not compare and dict_index is not dict_indexV2):
+        # dict_index = -1
     if (dict_index >= 0):
         quartet_dictionary[quartet][dict_index] = quartet_dictionary[quartet][dict_index] + 1
         return dict_index
@@ -132,21 +133,21 @@ def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartiti
         print()
         print("-----ERROR OUTPUT BIPARTITION-----")
         print("Sorted quartet:", sorted_quartet)
-        print([labelList.index(sorted_quartet[0]), labelList.index(sorted_quartet[1]), labelList.index(sorted_quartet[2]), labelList.index(sorted_quartet[3])])
-        print([len(labelList) - labelList.index(sorted_quartet[0]) - 1, len(labelList) - labelList.index(sorted_quartet[1]) - 1, len(labelList) - labelList.index(sorted_quartet[2]) - 1, len(labelList) - labelList.index(sorted_quartet[3]) - 1])
+        print([taxon_label_list.index(sorted_quartet[0]), taxon_label_list.index(sorted_quartet[1]), taxon_label_list.index(sorted_quartet[2]), taxon_label_list.index(sorted_quartet[3])])
+        print([len(taxon_label_list) - taxon_label_list.index(sorted_quartet[0]) - 1, len(taxon_label_list) - taxon_label_list.index(sorted_quartet[1]) - 1, len(taxon_label_list) - taxon_label_list.index(sorted_quartet[2]) - 1, len(taxon_label_list) - taxon_label_list.index(sorted_quartet[3]) - 1])
         print()
         print('Newick Tree: ', tree.as_string('newick'))
         print()
         print(tree.as_ascii_plot())
         print()
-        print(labelList)
+        print(taxon_label_list)
         print(tree.taxon_namespace.labels())
-        # print([[b.split_as_bitstring(), b.leafset_as_newick_string(tree.taxon_namespace)] for b in tree.bipartition_encoding])
+        print([[b.split_as_bitstring(), b.leafset_as_newick_string(tree.taxon_namespace)] for b in tree.bipartition_encoding])
         print()
-        # temp = [b.split_as_bitstring() for b in tree.bipartition_encoding]
-        # temp.sort()
-        # temp = [[t.taxon_bitmask] for t in quartet]
-        # print('temp ', temp)
+        temp = [b.split_as_bitstring() for b in tree.bipartition_encoding]
+        temp.sort()
+        temp = [[t.taxon_bitmask] for t in quartet]
+        print('temp ', temp)
         print(bitstring_encoding)
         print()
         print(tree.extract_tree_with_taxa_labels(quartet).as_ascii_plot())
@@ -160,25 +161,91 @@ def quartetBipartitionSupportHelper(tree, quartet_dictionary, quartet, bipartiti
         pass
     raise Exception('Error: Topology is not a match')
 
-def manualBitmaskSearch(sorted_quartet, labelList, bitstring_encoding):
-    # return False;
-    taxa_zero  = len(labelList) - labelList.index(sorted_quartet[0]) - 1;
-    taxa_one   = len(labelList) - labelList.index(sorted_quartet[1]) - 1;
-    taxa_two   = len(labelList) - labelList.index(sorted_quartet[2]) - 1;
-    taxa_three = len(labelList) - labelList.index(sorted_quartet[3]) - 1;
-    # taxa_zero  = labelList.index(sorted_quartet[0]);
-    # taxa_one   = labelList.index(sorted_quartet[1]);
-    # taxa_two   = labelList.index(sorted_quartet[2]);
-    # taxa_three = labelList.index(sorted_quartet[3]);
-    for bString in bitstring_encoding:
+def manualBitmaskSearch(sorted_quartet, taxon_label_list, bitstring_encoding):
+    # Start from back because encoded LSB
+    taxa_zero  = len(taxon_label_list) - taxon_label_list.index(sorted_quartet[0]) - 1
+    taxa_one   = len(taxon_label_list) - taxon_label_list.index(sorted_quartet[1]) - 1
+    taxa_two   = len(taxon_label_list) - taxon_label_list.index(sorted_quartet[2]) - 1
+    taxa_three = len(taxon_label_list) - taxon_label_list.index(sorted_quartet[3]) - 1
+    for b in bitstring_encoding:
 
-        if (bString[taxa_zero] is bString[taxa_one]) and (bString[taxa_two] is bString[taxa_three]) and (bString[taxa_zero] is not bString[taxa_two]):
+        if (b[taxa_zero] is b[taxa_one]) and (b[taxa_two] is b[taxa_three]) and (b[taxa_zero] is not b[taxa_two]):
             return 0
-        if (bString[taxa_zero] is bString[taxa_two]) and (bString[taxa_one] is bString[taxa_three]) and (bString[taxa_zero] is not bString[taxa_one]):
+        if (b[taxa_zero] is b[taxa_two]) and (b[taxa_one] is b[taxa_three]) and (b[taxa_zero] is not b[taxa_one]):
             return 1
-        if (bString[taxa_zero] is bString[taxa_three]) and (bString[taxa_one] is bString[taxa_two]) and (bString[taxa_zero] is not bString[taxa_one]):
+        if (b[taxa_zero] is b[taxa_three]) and (b[taxa_one] is b[taxa_two]) and (b[taxa_zero] is not b[taxa_one]):
             return 2
     return -1
+
+def manualBitmaskSearchV2(sorted_quartet, bipartition_dictionary):
+
+    first_duet  = frozenset([sorted_quartet[0], sorted_quartet[1]])
+    second_duet = frozenset([sorted_quartet[2], sorted_quartet[3]])
+    if len(bipartition_dictionary[first_duet]['1'].intersection(bipartition_dictionary[second_duet]['0'])) is not 0:
+        return 0
+    if len(bipartition_dictionary[second_duet]['1'].intersection(bipartition_dictionary[first_duet]['0'])) is not 0:
+        return 0
+    # for b in bipartition_dictionary[first_duet]['1']:
+    #     if b in bipartition_dictionary[second_duet]['0']:
+    #         return 0
+    # for b in bipartition_dictionary[second_duet]['1']:
+    #     if b in bipartition_dictionary[first_duet]['0']:
+    #         return 0
+
+    first_duet  = frozenset([sorted_quartet[0], sorted_quartet[2]])
+    second_duet = frozenset([sorted_quartet[1], sorted_quartet[3]])
+    if len(bipartition_dictionary[first_duet]['1'].intersection(bipartition_dictionary[second_duet]['0'])) is not 0:
+        return 1
+    if len(bipartition_dictionary[second_duet]['1'].intersection(bipartition_dictionary[first_duet]['0'])) is not 0:
+        return 1
+    # for b in bipartition_dictionary[first_duet]['1']:
+    #     if b in bipartition_dictionary[second_duet]['0']:
+    #         return 1
+    # for b in bipartition_dictionary[second_duet]['1']:
+    #     if b in bipartition_dictionary[first_duet]['0']:
+    #         return 1
+
+    first_duet  = frozenset([sorted_quartet[0], sorted_quartet[3]])
+    second_duet = frozenset([sorted_quartet[1], sorted_quartet[2]])
+    if len(bipartition_dictionary[first_duet]['1'].intersection(bipartition_dictionary[second_duet]['0'])) is not 0:
+        return 2
+    if len(bipartition_dictionary[second_duet]['1'].intersection(bipartition_dictionary[first_duet]['0'])) is not 0:
+        return 2
+    # for b in bipartition_dictionary[first_duet]['1']:
+    #     if b in bipartition_dictionary[second_duet]['0']:
+    #         return 2
+    # for b in bipartition_dictionary[second_duet]['1']:
+    #     if b in bipartition_dictionary[first_duet]['0']:
+    #         return 2
+    return -1
+
+def makeBipartitionDictionary(taxon_label_list, bitstring_encoding):
+    # taxa duets
+    combinations_of_taxa = combinations(taxon_label_list, 2)
+
+    bipartition_dictionary = {}
+
+    for tuple_of_leaves in combinations_of_taxa:
+        # Start from back because encoded LSB
+        taxa_zero  = len(taxon_label_list) - taxon_label_list.index(tuple_of_leaves[0]) - 1
+        taxa_one   = len(taxon_label_list) - taxon_label_list.index(tuple_of_leaves[1]) - 1
+
+        ones  = []
+        zeros = []
+
+        for b in bitstring_encoding:
+            if (b[taxa_zero] is '1' and b[taxa_one] is '1'):
+                ones.append(b)
+            elif (b[taxa_zero] is '0' and b[taxa_one] is '0'):
+                zeros.append(b)
+
+        # frozenset_of_leaves = frozenset(tuple_of_leaves)
+        bipartition_dictionary[frozenset(tuple_of_leaves)] = {
+            '1': set(ones),
+            '0': set(zeros)
+        }
+    return bipartition_dictionary
+
 
 def quartetExtractionSupportHelper(tree, quartet_dictionary, quartet):
     sorted_quartet = list(quartet)
@@ -325,7 +392,7 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
     reference_tree.is_rooted = True
     reference_tree.encode_bipartitions()
     bipartition_encoding = set(b.split_bitmask for b in reference_tree.bipartition_encoding)
-    labelList = [(n.taxon.label) for n in reference_tree.leaf_nodes()]
+    taxon_label_list = [(n.taxon.label) for n in reference_tree.leaf_nodes()]
     # reference_tree_list = TreeList()
     # reference_tree_list.append(reference_tree)
 

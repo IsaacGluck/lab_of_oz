@@ -4,7 +4,7 @@ from dendropy.calculate import treecompare
 from itertools import combinations
 from math import log
 from pprint import pprint
-import pickle, sys, os, time
+import pickle, sys, os, time, argparse
 
 
 # Input: Filename with trees (requires newick format)
@@ -229,6 +229,10 @@ def writeQuartetDictionaries(bootstrap_tree_list, output_filepath, verbose=False
     pickle.dump(quartet_dictionary, file_obj)
     file_obj.close()
 
+    print("Wrote quartet dictionary output to: ", output_filepath)
+    if timing:
+        print('[PID: %d] DONE: ' % os.getpid(), (time.perf_counter() - start))
+
 
 def runProgram(sampleTree, output_directory, verbose=False, quiet=False, timing=False):
     output_filename = sampleTree.split('/')[-1]
@@ -253,7 +257,19 @@ def runProgram(sampleTree, output_directory, verbose=False, quiet=False, timing=
     # file_obj.close()
 
 
-runProgram('test_trees/highest_support.txt', 'quartet_dictionaries/', verbose=True, timing=True)
-runProgram('test_trees/medium_support.txt', 'quartet_dictionaries/', verbose=True, timing=True)
-runProgram('test_trees/low_support.txt', 'quartet_dictionaries/', verbose=True, timing=True)
+# runProgram('test_trees/highest_support.txt', 'quartet_dictionaries/', verbose=True, timing=True)
+# runProgram('test_trees/medium_support.txt', 'quartet_dictionaries/', verbose=True, timing=True)
+# runProgram('test_trees/low_support.txt', 'quartet_dictionaries/', verbose=True, timing=True)
 # runProgram('run_files/RAxML_bootstrap.orfg1.last_2.subSample', 'quartet_dictionaries/', verbose=True, timing=True)
+
+# ./FirstHalf.py run_files/RAxML_bootstrap.orfg1.last_2.subSample quartet_dictionaries/ -t -v
+
+parser = argparse.ArgumentParser()
+parser.add_argument("sample_tree_file", metavar='<Sample Tree File>', help="The path of the bootstrap sample tree file")
+parser.add_argument("output_directory", metavar='<Output Directory>', help="The path of the output directory for writing the quartet dictionary")
+parser.add_argument("-v", "--verbose", action="store_true", default=False)
+parser.add_argument("-q", "--quiet", action="store_true", default=False)
+parser.add_argument("-t", "--timing", action="store_true", default=False, help='Setting timing turns verbose off.')
+args = parser.parse_args()
+
+runProgram(args.sample_tree_file, args.output_directory, verbose=args.verbose, quiet=args.quiet, timing=args.timing)

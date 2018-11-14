@@ -35,3 +35,6 @@ Traceback (most recent call last):
 Wrote quartet dictionary output to:  quartet_dictionaries/RAxML_bootstrap.orfg11.last_2.subSample.quartet_dictionary
 2960.25user 1.99system 49:45.54elapsed 99%CPU (0avgtext+0avgdata 1330080maxresident)k
 0inputs+148464outputs (1major+1808637minor)pagefaults 0swaps
+Wrote quartet dictionary output to:  quartet_dictionaries/RAxML_bootstrap.orfg4.last_2.subSample.quartet_dictionary
+3249.32user 2.18system 54:41.97elapsed 99%CPU (0avgtext+0avgdata 1355736maxresident)k
+0inputs+156488outputs (1major+2070782minor)pagefaults 0swaps

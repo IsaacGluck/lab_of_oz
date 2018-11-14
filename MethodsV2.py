@@ -73,11 +73,20 @@ def getTreeQuartetSupport(tree, quartet_dictionary, timing):
         if not b.is_trivial():
             bitstring_encoding.append(b.split_as_bitstring())
 
+    # pdm = tree.phylogenetic_distance_matrix()
+    # pprint(pdm.distances(is_weighted_edge_distances=False))
+    # sys.exit(1)
+
     bipartition_dictionary = makeBipartitionDictionary(taxon_label_list, bitstring_encoding)
 
     extraction_needed = 0
     counter = 0
     for quartet in quartet_dictionary:
+
+        # if counter == 41:
+        # if getShortestPath(quartet, pdm, tree):
+        #     sys.exit(1)
+
         counter += 1
         if quartet.issubset(frozenset_of_taxa):  # if the tree contains the quartet
             p = round((counter / len(quartet_dictionary)) * 100, 2)
@@ -247,6 +256,45 @@ def makeBipartitionDictionary(taxon_label_list, bitstring_encoding):
     return bipartition_dictionary
 
 
+# Doesn't work
+def getShortestPath(quartet, pdm, tree):
+    sorted_quartet = list(quartet)
+    sorted_quartet.sort()
+
+    one = pdm.path_edge_count(tree.taxon_namespace.get_taxon(sorted_quartet[0]), tree.taxon_namespace.get_taxon(sorted_quartet[1]));
+    two = pdm.path_edge_count(tree.taxon_namespace.get_taxon(sorted_quartet[2]), tree.taxon_namespace.get_taxon(sorted_quartet[3]));
+    first = min(one, two);
+    # print(first)
+
+    three = pdm.path_edge_count(tree.taxon_namespace.get_taxon(sorted_quartet[0]), tree.taxon_namespace.get_taxon(sorted_quartet[2]));
+    four = pdm.path_edge_count(tree.taxon_namespace.get_taxon(sorted_quartet[1]), tree.taxon_namespace.get_taxon(sorted_quartet[3]));
+    second = min(three, four)
+    # print(second)
+
+
+    five = pdm.path_edge_count(tree.taxon_namespace.get_taxon(sorted_quartet[0]), tree.taxon_namespace.get_taxon(sorted_quartet[3]));
+    six = pdm.path_edge_count(tree.taxon_namespace.get_taxon(sorted_quartet[1]), tree.taxon_namespace.get_taxon(sorted_quartet[2]));
+    third = min(five, six)
+    # print(third)
+
+    total = min(first, second, third)
+    if (total is first and total is second) or (total is first and total is third) or (total is second and total is third):
+        print('quartet', sorted_quartet)
+        print(tree.as_ascii_plot())
+        print()
+        print(one)
+        print(two)
+        print(three)
+        print(four)
+        print(five)
+        print(six)
+        print()
+        print(tree.extract_tree_with_taxa_labels(quartet).as_ascii_plot())
+        return True
+
+    return False
+
+
 def quartetExtractionSupportHelper(tree, quartet_dictionary, quartet):
     sorted_quartet = list(quartet)
     sorted_quartet.sort()
@@ -387,6 +435,7 @@ def buildFullSupportParallelHelper(bootstrap_tree_list, start, verbose, parallel
     # parallel_queue.put(quartet_dictionary)
     return quartet_dictionary
 
+
 def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="output_tree.tre", quiet=False, timing=False):
     reference_tree = Tree.get(path=referenceTreeFile, schema="newick", preserve_underscores=True)
     reference_tree.is_rooted = True
@@ -526,10 +575,10 @@ def runProgram(referenceTreeFile, sampleTreeList, bootstrap_cutoff_value=80, out
     sample_tree_list = readTrees(sampleTreeList, reference_tree_namespace, quiet)
 
     # Check if gene tree taxon namespace matches reference tree
-    # for s in sample_tree_list:
-    #     if not reference_tree_namespace.has_taxa_labels(s.taxon_namespace.labels()):
-    #         print('Error: reference tree is of a different taxon namespace as the sample trees')
-    #         return
+    for s in sample_tree_list:
+        if not reference_tree_namespace.has_taxa_labels(s.taxon_namespace.labels()):
+            print('Error: reference tree is of a different taxon namespace as the sample trees')
+            return
 
     full_quartet_dictionary = buildFullSupport(sample_tree_list, bootstrap_cutoff_value, verbose, quiet, timing)
     if verbose:

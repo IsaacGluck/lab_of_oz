@@ -20,3 +20,18 @@ Number of cpu :  96
 KeyboardInterrupt
 17.11user 0.25system 0:18.09elapsed 95%CPU (0avgtext+0avgdata 129636maxresident)k
 0inputs+6088outputs (1major+67276minor)pagefaults 0swaps
+Traceback (most recent call last):
+  File "./FirstHalf.py", line 2, in <module>
+    from dendropy import Tree, TreeList
+  File "/dartfs-hpc/rc/home/v/f002cbv/.conda/envs/oz/lib/python3.6/site-packages/dendropy/__init__.py", line 95, in <module>
+    from dendropy.legacy import seqsim
+  File "<frozen importlib._bootstrap>", line 971, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 955, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 665, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 674, in exec_module
+
+0.32user 0.11system 0:08.93elapsed 4%CPU (0avgtext+0avgdata 18204maxresident)k
+0inputs+16outputs (1major+8830minor)pagefaults 0swaps
+Wrote quartet dictionary output to:  quartet_dictionaries/RAxML_bootstrap.orfg11.last_2.subSample.quartet_dictionary
+2960.25user 1.99system 49:45.54elapsed 99%CPU (0avgtext+0avgdata 1330080maxresident)k
+0inputs+148464outputs (1major+1808637minor)pagefaults 0swaps

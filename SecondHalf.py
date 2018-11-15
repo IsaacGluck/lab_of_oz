@@ -110,8 +110,8 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
         print('GOT LIST OF SPLITS: ', (time.perf_counter() - start))
 
 
-
-
+    total_exist = 1
+    not_exist = 1
     counter = 0
     for split_object in splits:
         counter += 1
@@ -135,7 +135,7 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
                 inner_p = str(round((inner_counter / total_possibilities) * 100, 2)).rstrip('0')
 
                 if timing:
-                    sys.stdout.write("Build Label Tree Progress [%s/%s] : %s%%   %s%%  \r" % (str(counter), str(len(splits)), p, inner_p) )
+                    sys.stdout.write("Build Label Tree Progress [%s/%s] : %s%%   %s%%          existence: %f \r" % (str(counter), str(len(splits)), p, inner_p, not_exist/total_exist * 100))
                     sys.stdout.flush()
 
                 combined_taxa = list(left_combination + right_combination)
@@ -147,6 +147,7 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
 
                     # indices of tree structures in dictionary
                     support_value = -1
+
                     result0 = ((reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[0], combined_taxa_labels[1]]) in bipartition_encoding) or
                               (reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[2], combined_taxa_labels[3]]) in bipartition_encoding))
                     result1 = ((reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[0], combined_taxa_labels[2]]) in bipartition_encoding) or
@@ -154,6 +155,11 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
                     result2 = ((reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[0], combined_taxa_labels[3]]) in bipartition_encoding) or
                               (reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[1], combined_taxa_labels[2]]) in bipartition_encoding))
                     results = [result0, result1, result2]
+
+                    if ((not result0) and (not result1) and (not result2)):
+                        not_exist += 1
+                    total_exist += 1
+
                     for i in range(3):
                         if results[i]:
                             max_val = max(quartet_dictionary_value[0], quartet_dictionary_value[1], quartet_dictionary_value[2])
@@ -258,3 +264,14 @@ args = parser.parse_args()
 
 runProgram(args.reference_tree_file, args.quartet_dictionary_file_list,
            bootstrap_cutoff_value=args.cutoff, output_tree=args.output_file, verbose=args.verbose, quiet=args.quiet, timing=args.timing)
+
+
+
+# REGEX TO REMOVE BRANCH LENGTHS
+# :\d+\.\d+(e-\d+)?
+
+
+# time ./SecondHalf.py run_files/RAxML_bestTree.rcGTA_cat quartet_dictionaries/RAxML_bootstrap.orfg1.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg10_5.last_3.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg3_5.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg7.last_2.subSample.quartet_dictionary -c 8 -t -v
+
+
+# time ./SecondHalf.py run_files/RAxML_bestTree.rcGTA_cat quartet_dictionaries/RAxML_bootstrap.orfg1.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg10.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg10_5.last_3.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg11.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg12.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg14.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg15.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg2.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg3.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg3_5.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg4.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg5.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg6.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg7.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg8.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg9.last_2.subSample.quartet_dictionary  -c 8 -t -v

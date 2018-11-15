@@ -438,12 +438,17 @@ def buildFullSupportParallelHelper(bootstrap_tree_list, start, verbose, parallel
 
 def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="output_tree.tre", quiet=False, timing=False):
     reference_tree = Tree.get(path=referenceTreeFile, schema="newick", preserve_underscores=True)
-    reference_tree.is_rooted = True
+    reference_tree.is_rooted = False
     reference_tree.encode_bipartitions()
     bipartition_encoding = set(b.split_bitmask for b in reference_tree.bipartition_encoding)
+
+    bitstring_encoding = []
+    for b in tree.bipartition_encoding:
+        if not b.is_trivial():
+            bitstring_encoding.append(b.split_as_bitstring())
+
     taxon_label_list = [(n.taxon.label) for n in reference_tree.leaf_nodes()]
-    # reference_tree_list = TreeList()
-    # reference_tree_list.append(reference_tree)
+
 
 
     tn = reference_tree.taxon_namespace
@@ -454,7 +459,6 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
     splits = getListOfSplits(tn, reference_tree)
     if timing:
         print('GOT LIST OF SPLITS: ', (time.perf_counter() - start))
-
 
 
 
@@ -481,7 +485,7 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
                 inner_p = str(round((inner_counter / total_possibilities) * 100, 2)).rstrip('0')
 
                 if timing:
-                    sys.stdout.write("Build Label Tree Progress [%s/%s] : %s%%   %s%%  \r" % (str(counter), str(len(splits)), p, inner_p) )
+                    sys.stdout.write("Build Label Tree Progress [%s/%s] : %s%%   %s%%\r" % (str(counter), str(len(splits)), p, inner_p))
                     sys.stdout.flush()
 
                 combined_taxa = list(left_combination + right_combination)

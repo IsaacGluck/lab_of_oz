@@ -4,7 +4,7 @@ from dendropy.calculate import treecompare
 from itertools import combinations
 from math import log
 from pprint import pprint
-import pickle, sys, os, time
+import pickle, sys, os, time, argparse
 
 
 # Input: list of files with serialized quartet_dictionaries
@@ -202,7 +202,7 @@ def getTaxaFromBipartition(taxonNamespace, bipartition):
 def runProgram(referenceTreeFile, quartetDictionaryFileList, bootstrap_cutoff_value=80, output_tree="output_tree.tre", verbose=False, quiet=False, timing=False):
     if verbose:
         print("Reference Tree: ", referenceTreeFile)
-        print("Sample Tree List: ", sampleTreeList)
+        print("Quartet Dictionary File List: ", quartetDictionaryFileList)
         print("Bootstrap Cutoff Value: ", bootstrap_cutoff_value)
         print("Output Tree File: ", output_tree)
 
@@ -225,6 +225,24 @@ def runProgram(referenceTreeFile, quartetDictionaryFileList, bootstrap_cutoff_va
         print()
     buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree, quiet, timing)
 
-quartetDictionaryFileList = ['quartet_dictionaries/highest_support.txt.quartet_dictionary', 'quartet_dictionaries/low_support.txt.quartet_dictionary', 'quartet_dictionaries/medium_support.txt.quartet_dictionary']
+# quartetDictionaryFileList = ['quartet_dictionaries/highest_support.txt.quartet_dictionary', 'quartet_dictionaries/low_support.txt.quartet_dictionary', 'quartet_dictionaries/medium_support.txt.quartet_dictionary']
 # ./MethodsV2.py test_trees/reference_tree.txt test_trees/highest_support.txt test_trees/low_support.txt test_trees/medium_support.txt -t -c 8
-runProgram('test_trees/reference_tree.txt', quartetDictionaryFileList, bootstrap_cutoff_value=8, timing=True)
+# runProgram('test_trees/reference_tree.txt', quartetDictionaryFileList, bootstrap_cutoff_value=8, timing=True)
+
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("reference_tree_file", metavar='<Reference Tree File>', help="The path of the reference tree file")
+parser.add_argument('quartet_dictionary_file_list', metavar='<Quartet Dictionary Files>', nargs='+',
+                    help='The gene tree file paths containing bootstrap trees')
+parser.add_argument("-v", "--verbose", action="store_true", default=False)
+parser.add_argument("-q", "--quiet", action="store_true", default=False)
+parser.add_argument("-t", "--timing", action="store_true", default=False, help='Setting timing turns verbose off.')
+parser.add_argument("-c", "--cutoff", default=80, type=int,
+                    help="Bootstrap Cutoff Value")
+parser.add_argument("-o", "--output_file", default="output_tree.tre",
+                    help="Output file for resulting tree with support. The default is 'output_tree.tre'")
+args = parser.parse_args()
+
+runProgram(args.reference_tree_file, args.quartet_dictionary_file_list,
+           bootstrap_cutoff_value=args.cutoff, output_tree=args.output_file, verbose=args.verbose, quiet=args.quiet, timing=args.timing)

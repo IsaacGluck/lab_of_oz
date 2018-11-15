@@ -10,6 +10,8 @@ output_tree.tre
 
 output_tree_one.tre
 
+nohup.out
+
 run_output.txt
 
 help.txt
@@ -17,3 +19,5 @@ help.txt
 quartet_dictionaries/
 
 quartet_dictionaries_full/
+
+quartet_dictionaries_full_backup/

@@ -38,3 +38,33 @@ Wrote quartet dictionary output to:  quartet_dictionaries/RAxML_bootstrap.orfg11
 Wrote quartet dictionary output to:  quartet_dictionaries/RAxML_bootstrap.orfg4.last_2.subSample.quartet_dictionary
 3249.32user 2.18system 54:41.97elapsed 99%CPU (0avgtext+0avgdata 1355736maxresident)k
 0inputs+156488outputs (1major+2070782minor)pagefaults 0swaps
+Wrote quartet dictionary output to:  quartet_dictionaries/RAxML_bootstrap.orfg6.last_2.subSample.quartet_dictionary
+4069.51user 2.64system 1:08:19elapsed 99%CPU (0avgtext+0avgdata 1438168maxresident)k
+0inputs+182544outputs (1major+2366892minor)pagefaults 0swaps
+Wrote quartet dictionary output to:  quartet_dictionaries/RAxML_bootstrap.orfg5.last_2.subSample.quartet_dictionary
+5075.49user 3.04system 1:25:15elapsed 99%CPU (0avgtext+0avgdata 1640292maxresident)k
+0inputs+222168outputs (1major+2736315minor)pagefaults 0swaps
+Wrote quartet dictionary output to:  quartet_dictionaries/RAxML_bootstrap.orfg10.last_2.subSample.quartet_dictionary
+5606.36user 12.86system 1:34:09elapsed 99%CPU (0avgtext+0avgdata 1758668maxresident)k
+0inputs+244248outputs (1major+5632986minor)pagefaults 0swaps
+Wrote quartet dictionary output to:  quartet_dictionaries/RAxML_bootstrap.orfg12.last_2.subSample.quartet_dictionary
+4473.16user 2.64system 1:15:18elapsed 99%CPU (0avgtext+0avgdata 1528288maxresident)k
+0inputs+201624outputs (1major+2525493minor)pagefaults 0swaps
+Wrote quartet dictionary output to:  quartet_dictionaries/RAxML_bootstrap.orfg13.last_2.subSample.quartet_dictionary
+4642.93user 2.90system 1:17:52elapsed 99%CPU (0avgtext+0avgdata 1583868maxresident)k
+0inputs+211712outputs (1major+2750106minor)pagefaults 0swaps
+Wrote quartet dictionary output to:  quartet_dictionaries/RAxML_bootstrap.orfg2.last_2.subSample.quartet_dictionary
+4752.38user 3.97system 1:19:52elapsed 99%CPU (0avgtext+0avgdata 1584176maxresident)k
+0inputs+211712outputs (1major+2710115minor)pagefaults 0swaps
+Wrote quartet dictionary output to:  quartet_dictionaries/RAxML_bootstrap.orfg9.last_2.subSample.quartet_dictionary
+6057.96user 5.11system 1:41:34elapsed 99%CPU (0avgtext+0avgdata 2531864maxresident)k
+0inputs+280384outputs (1major+3987632minor)pagefaults 0swaps
+Wrote quartet dictionary output to:  quartet_dictionaries/RAxML_bootstrap.orfg8.last_2.subSample.quartet_dictionary
+5460.04user 4.62system 1:31:40elapsed 99%CPU (0avgtext+0avgdata 1758732maxresident)k
+0inputs+244248outputs (1major+3501407minor)pagefaults 0swaps
+Wrote quartet dictionary output to:  quartet_dictionaries/RAxML_bootstrap.orfg14.last_2.subSample.quartet_dictionary
+7047.20user 17.94system 1:58:25elapsed 99%CPU (0avgtext+0avgdata 2571340maxresident)k
+0inputs+293280outputs (1major+7899206minor)pagefaults 0swaps
+Wrote quartet dictionary output to:  quartet_dictionaries/RAxML_bootstrap.orfg3.last_2.subSample.quartet_dictionary
+6171.38user 4.64system 1:43:36elapsed 99%CPU (0avgtext+0avgdata 1886552maxresident)k
+0inputs+267920outputs (1major+3743412minor)pagefaults 0swaps

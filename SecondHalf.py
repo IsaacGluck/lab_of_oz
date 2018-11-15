@@ -19,16 +19,17 @@ def readPickledTrees(quartetDictionaryFileList, quiet, timing):
 
     counter = 0
     for filename in quartetDictionaryFileList:
-        counter += 1
-        p = round((counter / len(quartetDictionaryFileList)) * 100, 2)
-        if timing:
-            sys.stdout.write("[%d/%d] Unpckling file progress: %f%%   \r" % (counter, len(quartetDictionaryFileList), p) )
-            sys.stdout.flush()
 
         file_obj = open(filename, 'rb')
         qd = pickle.load(file_obj)
         quartet_dictionary_list.append(qd)
         file_obj.close()
+
+        counter += 1
+        p = round((counter / len(quartetDictionaryFileList)) * 100, 2)
+        if timing:
+            sys.stdout.write("[%d/%d] Unpickling file progress: %f%%   \r" % (counter, len(quartetDictionaryFileList), p) )
+            sys.stdout.flush()
 
     return quartet_dictionary_list
 
@@ -97,8 +98,6 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
     reference_tree.encode_bipartitions()
     bipartition_encoding = set(b.split_bitmask for b in reference_tree.bipartition_encoding)
     taxon_label_list = [(n.taxon.label) for n in reference_tree.leaf_nodes()]
-    # reference_tree_list = TreeList()
-    # reference_tree_list.append(reference_tree)
 
 
     tn = reference_tree.taxon_namespace
@@ -116,10 +115,7 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
     counter = 0
     for split_object in splits:
         counter += 1
-        p = round((counter / len(splits)) * 100, 2)
-        if timing:
-            sys.stdout.write("Build Label Tree Progress: %f%%   \r" % (p) )
-            sys.stdout.flush()
+        p = str(round((counter / len(splits)) * 100, 2)).rstrip('0')
 
         if 'left' not in split_object:
             continue
@@ -132,8 +128,16 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
 
         total_support_value = 0
 
+        inner_counter = 0
         for left_combination in left_combinations:
             for right_combination in right_combinations:
+                inner_counter += 1
+                inner_p = str(round((inner_counter / total_possibilities) * 100, 2)).rstrip('0')
+
+                if timing:
+                    sys.stdout.write("Build Label Tree Progress [%s/%s] : %s%%   %s%%  \r" % (str(counter), str(len(splits)), p, inner_p) )
+                    sys.stdout.flush()
+
                 combined_taxa = list(left_combination + right_combination)
                 combined_taxa_labels = [taxa.label for taxa in combined_taxa]
                 combined_taxa_labels.sort()

@@ -461,10 +461,7 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
     counter = 0
     for split_object in splits:
         counter += 1
-        p = round((counter / len(splits)) * 100, 2)
-        if timing:
-            sys.stdout.write("Build Label Tree Progress: %f%%   \r" % (p) )
-            sys.stdout.flush()
+        p = str(round((counter / len(splits)) * 100, 2)).rstrip('0')
 
         if 'left' not in split_object:
             continue
@@ -477,8 +474,16 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
 
         total_support_value = 0
 
+        inner_counter = 0
         for left_combination in left_combinations:
             for right_combination in right_combinations:
+                inner_counter += 1
+                inner_p = str(round((inner_counter / total_possibilities) * 100, 2)).rstrip('0')
+
+                if timing:
+                    sys.stdout.write("Build Label Tree Progress [%s/%s] : %s%%   %s%%  \r" % (str(counter), str(len(splits)), p, inner_p) )
+                    sys.stdout.flush()
+
                 combined_taxa = list(left_combination + right_combination)
                 combined_taxa_labels = [taxa.label for taxa in combined_taxa]
                 combined_taxa_labels.sort()
@@ -588,7 +593,7 @@ def runProgram(referenceTreeFile, sampleTreeList, bootstrap_cutoff_value=80, out
         print()
     buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree, quiet, timing)
 
-# ./MethodsV2.py run_files/RAxML_bestTree.rcGTA_cat run_files/RAxML_bootstrap.orfg1.last_2.subSample run_files/RAxML_bootstrap.orfg10.last_2.subSample -v -c 8 > run_output.txt
+# ./MethodsV2.py run_files/RAxML_bestTree.rcGTA_cat run_files/RAxML_bootstrap.orfg1.last_2.subSample run_files/RAxML_bootstrap.orfg3_5.last_2.subSample -v -c 8
 # ./MethodsV2.py test_trees/reference_tree.txt test_trees/trifurcations.txt -v -c 8
 # ./MethodsV2.py test_trees/reference_tree.txt test_trees/highest_support.txt test_trees/highest_support.txt -v -c 8
 # ./MethodsV2.py run_files/RAxML_bestTree.rcGTA_cat run_files/RAxML_bootstrap.orfg1.last_2 -v -c 8

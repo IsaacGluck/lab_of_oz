@@ -92,12 +92,71 @@ def buildFullSupport(quartet_dictionary_list, bootstrap_cutoff_value=80, verbose
     return full_quartet_dictionary
 
 
+def makeBipartitionDictionary(taxon_label_list, bitstring_encoding):
+    # taxa duets
+    combinations_of_taxa = combinations(taxon_label_list, 2)
+
+    bipartition_dictionary = {}
+
+    for tuple_of_leaves in combinations_of_taxa:
+        # Start from back because encoded LSB
+        taxa_zero  = len(taxon_label_list) - taxon_label_list.index(tuple_of_leaves[0]) - 1
+        taxa_one   = len(taxon_label_list) - taxon_label_list.index(tuple_of_leaves[1]) - 1
+
+        ones  = []
+        zeros = []
+
+        for b in bitstring_encoding:
+            if (b[taxa_zero] is '1' and b[taxa_one] is '1'):
+                ones.append(b)
+            elif (b[taxa_zero] is '0' and b[taxa_one] is '0'):
+                zeros.append(b)
+
+        # frozenset_of_leaves = frozenset(tuple_of_leaves)
+        bipartition_dictionary[frozenset(tuple_of_leaves)] = {
+            '1': set(ones),
+            '0': set(zeros)
+        }
+    return bipartition_dictionary
+
+def manualBitmaskSearchV2(sorted_quartet, bipartition_dictionary):
+
+    first_duet  = frozenset([sorted_quartet[0], sorted_quartet[1]])
+    second_duet = frozenset([sorted_quartet[2], sorted_quartet[3]])
+    if len(bipartition_dictionary[first_duet]['1'].intersection(bipartition_dictionary[second_duet]['0'])) is not 0:
+        return 0
+    if len(bipartition_dictionary[second_duet]['1'].intersection(bipartition_dictionary[first_duet]['0'])) is not 0:
+        return 0
+
+    first_duet  = frozenset([sorted_quartet[0], sorted_quartet[2]])
+    second_duet = frozenset([sorted_quartet[1], sorted_quartet[3]])
+    if len(bipartition_dictionary[first_duet]['1'].intersection(bipartition_dictionary[second_duet]['0'])) is not 0:
+        return 1
+    if len(bipartition_dictionary[second_duet]['1'].intersection(bipartition_dictionary[first_duet]['0'])) is not 0:
+        return 1
+
+    first_duet  = frozenset([sorted_quartet[0], sorted_quartet[3]])
+    second_duet = frozenset([sorted_quartet[1], sorted_quartet[2]])
+    if len(bipartition_dictionary[first_duet]['1'].intersection(bipartition_dictionary[second_duet]['0'])) is not 0:
+        return 2
+    if len(bipartition_dictionary[second_duet]['1'].intersection(bipartition_dictionary[first_duet]['0'])) is not 0:
+        return 2
+
+    return -1
+
 def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="output_tree.tre", quiet=False, timing=False):
     reference_tree = Tree.get(path=referenceTreeFile, schema="newick", preserve_underscores=True)
     reference_tree.is_rooted = True
     reference_tree.encode_bipartitions()
     bipartition_encoding = set(b.split_bitmask for b in reference_tree.bipartition_encoding)
+    bitstring_encoding = []
+    for b in reference_tree.bipartition_encoding:
+        if not b.is_trivial():
+            bitstring_encoding.append(b.split_as_bitstring())
     taxon_label_list = [(n.taxon.label) for n in reference_tree.leaf_nodes()]
+    bipartition_dictionary = makeBipartitionDictionary(taxon_label_list, bitstring_encoding)
+
+
 
 
     tn = reference_tree.taxon_namespace
@@ -111,7 +170,7 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
 
 
     total_exist = 1
-    not_exist = 1
+    not_exist = 0
     counter = 0
     for split_object in splits:
         counter += 1
@@ -135,7 +194,8 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
                 inner_p = str(round((inner_counter / total_possibilities) * 100, 2)).rstrip('0')
 
                 if timing:
-                    sys.stdout.write("Build Label Tree Progress [%s/%s] : %s%%   %s%%          existence: %f \r" % (str(counter), str(len(splits)), p, inner_p, not_exist/total_exist * 100))
+                    sys.stdout.write("Build Label Tree Progress [%s/%s] : %s%%   %s%%          not found: %f%  %d \r"
+                                     % (str(counter), str(len(splits)), p, inner_p, not_exist/total_exist * 100, not_exist))
                     sys.stdout.flush()
 
                 combined_taxa = list(left_combination + right_combination)
@@ -156,9 +216,14 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
                               (reference_tree.taxon_namespace.taxa_bitmask(labels=[combined_taxa_labels[1], combined_taxa_labels[2]]) in bipartition_encoding))
                     results = [result0, result1, result2]
 
-                    if ((not result0) and (not result1) and (not result2)):
-                        not_exist += 1
+                    # Backup
+                    if ((not results[0]) and (not results[1]) and (not results[2])):
+                        result_index = manualBitmaskSearchV2(combined_taxa_labels, bipartition_dictionary)
+                        results[result_index] = True
+
                     total_exist += 1
+                    if ((not results[0]) and (not results[1]) and (not results[2])):
+                        not_exist += 1
 
                     for i in range(3):
                         if results[i]:
@@ -270,8 +335,8 @@ runProgram(args.reference_tree_file, args.quartet_dictionary_file_list,
 # REGEX TO REMOVE BRANCH LENGTHS
 # :\d+\.\d+(e-\d+)?
 
-
+# QUICK RUN
 # time ./SecondHalf.py run_files/RAxML_bestTree.rcGTA_cat quartet_dictionaries/RAxML_bootstrap.orfg1.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg10_5.last_3.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg3_5.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg7.last_2.subSample.quartet_dictionary -c 8 -t -v
 
-
+# FULL RUN
 # time ./SecondHalf.py run_files/RAxML_bestTree.rcGTA_cat quartet_dictionaries/RAxML_bootstrap.orfg1.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg10.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg10_5.last_3.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg11.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg12.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg14.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg15.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg2.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg3.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg3_5.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg4.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg5.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg6.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg7.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg8.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg9.last_2.subSample.quartet_dictionary  -c 8 -t -v

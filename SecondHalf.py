@@ -194,7 +194,7 @@ def buildLabeledTree(referenceTreeFile, full_quartet_dictionary, output_tree="ou
                 inner_p = str(round((inner_counter / total_possibilities) * 100, 2)).rstrip('0')
 
                 if timing:
-                    sys.stdout.write("Build Label Tree Progress [%s/%s] : %s%%   %s%%          not found: %f%  %d \r" % (str(counter), str(len(splits)), p, inner_p, not_exist/total_exist * 100, not_exist))
+                    sys.stdout.write("Build Label Tree Progress [%s/%s] : %s%%   %s%%          not found: %f%%  %d \r" % (str(counter), str(len(splits)), p, inner_p, not_exist/total_exist * 100, not_exist))
                     sys.stdout.flush()
 
                 combined_taxa = list(left_combination + right_combination)

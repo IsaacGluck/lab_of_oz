@@ -9,14 +9,22 @@ import pickle, sys, os, time, argparse
 
 # Input: list of files with serialized quartet_dictionaries
 # Output: A list of quartet_dictionary objects
-def readPickledTrees(quartetDictionaryFileList, quiet):
+def readPickledTrees(quartetDictionaryFileList, quiet, timing):
     if not quiet:
         print()
         print("Reading in quartet dictionary files...")
         print()
 
     quartet_dictionary_list = []
+
+    counter = 0
     for filename in quartetDictionaryFileList:
+        counter += 1
+        p = round((counter / len(quartetDictionaryFileList)) * 100, 2)
+        if timing:
+            sys.stdout.write("[%d/%d] Unpckling file progress: %f%%   \r" % (counter, len(quartetDictionaryFileList), p) )
+            sys.stdout.flush()
+
         file_obj = open(filename, 'rb')
         qd = pickle.load(file_obj)
         quartet_dictionary_list.append(qd)
@@ -215,7 +223,7 @@ def runProgram(referenceTreeFile, quartetDictionaryFileList, bootstrap_cutoff_va
         print("Error with file '{}': please only use files with newick tree format".format(referenceTreeFile))
         sys.exit()
 
-    quartet_dictionary_list = readPickledTrees(quartetDictionaryFileList, quiet)
+    quartet_dictionary_list = readPickledTrees(quartetDictionaryFileList, quiet, timing)
 
     full_quartet_dictionary = buildFullSupport(quartet_dictionary_list, bootstrap_cutoff_value, verbose, quiet, timing)
     if verbose:

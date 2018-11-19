@@ -262,7 +262,7 @@ def runProgram(sampleTree, output_directory, verbose=False, quiet=False, timing=
 # runProgram('test_trees/low_support.txt', 'quartet_dictionaries/', verbose=True, timing=True)
 # runProgram('run_files/RAxML_bootstrap.orfg1.last_2.subSample', 'quartet_dictionaries/', verbose=True, timing=True)
 
-# ./FirstHalf.py run_files/RAxML_bootstrap.orfg1.last_2.subSample quartet_dictionaries/ -t -v
+# ./QUEST_FirstHalf.py run_files/RAxML_bootstrap.orfg1.last_2.subSample quartet_dictionaries/ -t -v
 
 parser = argparse.ArgumentParser()
 parser.add_argument("sample_tree_file", metavar='<Sample Tree File>', help="The path of the bootstrap sample tree file")

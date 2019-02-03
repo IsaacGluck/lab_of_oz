@@ -1,0 +1,8 @@
+FIND COLON BRANCH LENGTHS
+:\d+\.\d+(e-\d+)?
+
+FIND BRANCH LENGTHS WITH BRACKET COMMENTS
+:\d+\.\d+\[(-)?\d\.\d+,(-)?\d\.\d+\]
+
+
+FIND BRACKET COMMENTS

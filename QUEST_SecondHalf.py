@@ -326,9 +326,6 @@ runProgram(args.reference_tree_file, args.quartet_dictionary_file_list,
 
 
 
-# REGEX TO REMOVE BRANCH LENGTHS
-# :\d+\.\d+(e-\d+)?
-
 # QUICK RUN
 # time ./QUEST_SecondHalf.py run_files/RAxML_bestTree.rcGTA_cat quartet_dictionaries/RAxML_bootstrap.orfg1.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg10_5.last_3.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg3_5.last_2.subSample.quartet_dictionary quartet_dictionaries/RAxML_bootstrap.orfg7.last_2.subSample.quartet_dictionary -c 8 -t -v
 
